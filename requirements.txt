@@ -1,0 +1,5 @@
+flask
+git+https://github.com/pogodevorg/pgoapi.git@4b0e0671ddfcba3b037002f7a8de6d2a63cd229b#egg=pgoapi
+geopy
+beautifulsoup4
+requests

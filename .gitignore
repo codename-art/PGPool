@@ -1,0 +1,5 @@
+.idea
+*.pyc
+*.csv
+config.json
+pokemon_moveset_grades.json

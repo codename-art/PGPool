@@ -1,0 +1,6 @@
+{
+  "port": 4242,
+  "hash_key": "<YOUR BOSSLAND HASH KEY>",
+  "accounts_file": "<FILE CONTAINING LVL30+ ACCOUNTS IN ROCKETMAP FORMAT>",
+  "require_min_trainer_level": 30
+}
