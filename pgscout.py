@@ -7,7 +7,7 @@ from flask import Flask, request, jsonify
 
 from pgscout.Scout import Scout
 from pgscout.ScoutJob import ScoutJob
-from pgscout.cache import get_cached_encounter, cache_encounter
+from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get
 from pgscout.console import print_status
 from pgscout.utils import get_pokemon_name
@@ -65,6 +65,12 @@ def run_webserver():
     app.run(threaded=True, port=cfg_get('port'))
 
 
+def cache_cleanup_thread():
+    while True:
+        time.sleep(60)
+        num_deleted = cleanup_cache()
+        log.info("Cleaned up {} entries from encounter cache.".format(num_deleted))
+
 # ===========================================================================
 
 log.info("PGScout starting up.")
@@ -75,9 +81,14 @@ with open(cfg_get('accounts_file'), 'r') as f:
         fields = map(str.strip, fields)
         scout = Scout(fields[0], fields[1], fields[2], jobs)
         scouts.append(scout)
-        t = Thread(target=scout.run, name="s_{}".format(scout.username))
+        t = Thread(target=scout.run, name="{}".format(scout.username))
         t.daemon = True
         t.start()
+
+# Cleanup cache in background
+t = Thread(target=cache_cleanup_thread, name="cache_cleaner")
+t.daemon = True
+t.start()
 
 # Start thread to print current status and get user input.
 t = Thread(target=print_status,
@@ -90,5 +101,6 @@ t = Thread(target=run_webserver, name='webserver')
 t.daemon = True
 t.start()
 
+# Dummy endless loop.
 while True:
     time.sleep(1)
