@@ -11,6 +11,7 @@ from pgoapi.utilities import get_cell_ids, f2i
 
 from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
+from pgscout.stats import inc_for_pokemon
 from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, calc_pokemon_level, \
     get_player_level, calc_iv
 
@@ -211,6 +212,7 @@ class Scout(object):
         }
         self.log_info(u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(iv, at, df, st, pokemon_level,
                                                                                   pokemon_name, cp, scout_level))
+        inc_for_pokemon(pokemon_id)
         return response
 
     def check_login(self):

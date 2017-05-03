@@ -11,6 +11,8 @@ from datetime import datetime
 from threading import Thread
 
 from pgscout.cache import get_cached_count
+from pgscout.stats import get_pokemon_stats
+from pgscout.utils import get_pokemon_name
 
 
 def input_processor(state):
@@ -23,7 +25,11 @@ def input_processor(state):
 
         if command.isdigit():
             state['page'] = int(command)
+        elif command == 'p':
+            state['display'] = 'pokemon'
+            state['page'] = 1
         elif command == '':
+            # Toggle between scouts and log view
             state['display'] = 'scouts' if state['display'] == 'logs' else 'logs'
             state['page'] = 1
 
@@ -58,6 +64,8 @@ def print_status(scouts, initial_display, jobs):
 
         if state['display'] == 'scouts':
             total_pages = print_scouts(lines, state, scouts)
+        elif state['display'] == 'pokemon':
+            total_pages = print_pokemon(lines, state)
 
         # Footer
         lines.append('Page {}/{}. Page number to switch pages.'.format(state['page'], total_pages))
@@ -77,6 +85,16 @@ def print_scouts(lines, state, scouts):
 
     lines.append(line_tmpl.format('Scout', 'Encounters', 'Enc/h', 'Last Request', 'Message'))
     return print_lines(lines, scout_line, scouts, 4, state)
+
+
+def print_pokemon(lines, state):
+    def format_pstat_line(e):
+        return line_tmpl.format(get_pokemon_name(e['pid']), e['count'])
+
+    line_tmpl = u'{:20} | {:10}'
+    lines.append(line_tmpl.format('Pokemon', 'Encounters'))
+    pstats = get_pokemon_stats()
+    return print_lines(lines, format_pstat_line, pstats, 4, state)
 
 
 def print_lines(lines, print_entity, entities, addl_lines, state):
