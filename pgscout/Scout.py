@@ -203,6 +203,7 @@ class Scout(object):
             'rating_attack': moveset_grades['offense'],
             'rating_defense': moveset_grades['defense'],
             'cp': cp,
+            'cp_multiplier': pokemon_info['cp_multiplier'],
             'level': pokemon_level,
             'catch_prob_1': probs[0],
             'catch_prob_2': probs[1],
