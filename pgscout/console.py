@@ -68,7 +68,9 @@ def print_status(scouts, initial_display, jobs):
             total_pages = print_pokemon(lines, state)
 
         # Footer
-        lines.append('Page {}/{}. Page number to switch pages.'.format(state['page'], total_pages))
+        lines.append('Page {}/{}. Page number to switch pages. <enter> to '
+                     'toggle log view. "p" for Pokemon stats.'.format(
+            state['page'], total_pages))
 
         # Print lines
         os.system('cls' if os.name == 'nt' else 'clear')
