@@ -59,6 +59,7 @@ The **response** is JSON formatted and looks like this:
   "rating_attack": "A",
   "rating_defense": "-",
   "cp": 659,
+  "cp_multiplier": 0.55079269,
   "level": 17,
   "catch_prob_1": 0.27512598037719727,
   "catch_prob_2": 0.3828456401824951,
