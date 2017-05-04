@@ -232,8 +232,15 @@ class Scout(object):
             'scout_level': scout_level,
             'encountered_time': time.time()
         }
-        self.log_info(u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(iv, at, df, st, pokemon_level,
-                                                                                  pokemon_name, cp, scout_level))
+
+        # Add form of Unown
+        if pokemon_id == 201:
+            response['form'] = pokemon_info['pokemon_display'].get('form',
+                                                                   None)
+
+        self.log_info(
+            u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(
+                iv, at, df, st, pokemon_level, pokemon_name, cp, scout_level))
         inc_for_pokemon(pokemon_id)
         return response
 
