@@ -24,6 +24,7 @@ Just copy `config.json.sample` to `config.json` and fill in the information:
 * `port`: On which port the webservice will listen (default: 4242)
 * `hash_key`: Your Bossland PokeHash Key which is needed to perform any Pokémon GO related requests
 * `accounts_file`: A file containing PTC or Google accounts for Pokémon GO in [RocketMap](https://github.com/RocketMap/RocketMap) format: `auth-service,username,password`
+* `proxies_file`: A file containing proxies in `ip:port` format. Proxies will be picked round-robin. This file is optional. If you don't use proxies, just leave it empty.
 
 Don't forget to run `pip install -r requirements.txt` at least once before actually starting PGScout with `python pgscout.py`.
 
