@@ -18,6 +18,10 @@ from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, ca
 log = logging.getLogger(__name__)
 
 
+# Collect this many samples to determine an encounters/hour value.
+NUM_PAUSE_SAMPLES = 3
+
+
 class Scout(object):
     def __init__(self, auth, username, password, job_queue):
         self.auth = auth
@@ -27,11 +31,13 @@ class Scout(object):
 
         # Stats
         self.last_request = None
+        self.previous_encounter = None
         self.last_msg = ""
-        self.total_scouts = 0
+        self.total_encounters = 0
 
-        # Holds timestamps of scout requests of the last hour
-        self.history = deque()
+        # Collects the last few pauses between encounters to measure a "encounters per hour" value
+        self.past_pauses = deque()
+        self.encounters_per_hour = float(0)
 
         # instantiate pgoapi
         self.api = PGoApi()
@@ -78,13 +84,19 @@ class Scout(object):
         log.error(msg)
 
     def update_history(self):
-        now = time.time()
-        self.history.append(now)
-        earliest = self.history[0]
-        while now - earliest > 60*60:
-            self.history.popleft()
-            earliest = self.history[0]
-        self.total_scouts += 1
+        if self.previous_encounter:
+            # Determine current pause
+            now = time.time()
+            pause = now - self.previous_encounter
+            self.past_pauses.append(pause)
+            if len(self.past_pauses) > NUM_PAUSE_SAMPLES:
+                self.past_pauses.popleft()
+            avg_pause = reduce(lambda x, y: x + y, self.past_pauses) / len(
+                self.past_pauses)
+            self.encounters_per_hour = 3600 / avg_pause
+
+        self.total_encounters += 1
+        self.previous_encounter = time.time()
 
     def parse_wild_pokemon(self, response):
         wild_pokemon = []
