@@ -11,6 +11,7 @@ from datetime import datetime
 from threading import Thread
 
 from pgscout.cache import get_cached_count
+from pgscout.proxy import have_proxies
 from pgscout.stats import get_pokemon_stats
 from pgscout.utils import get_pokemon_name
 
@@ -79,20 +80,32 @@ def print_status(scouts, initial_display, jobs):
 
 def print_scouts(lines, state, scouts):
     def scout_line(current_line, s):
-        return line_tmpl.format(current_line,
-                                s.username,
-                                s.total_encounters,
-                                "{:5.1f}".format(s.encounters_per_hour),
-                                hr_tstamp(s.previous_encounter),
-                                s.last_msg)
+        if have_proxies():
+            return line_tmpl.format(current_line, s.username, s.proxy,
+                                    s.total_encounters,
+                                    "{:5.1f}".format(s.encounters_per_hour),
+                                    hr_tstamp(s.previous_encounter),
+                                    s.last_msg)
+        else:
+            return line_tmpl.format(current_line,
+                                    s.username,
+                                    s.total_encounters,
+                                    "{:5.1f}".format(s.encounters_per_hour),
+                                    hr_tstamp(s.previous_encounter),
+                                    s.last_msg)
 
     len_username = str(reduce(lambda l1, l2: max(l1, l2),
                               map(lambda s: len(s.username), scouts)))
     len_num = str(len(str(len(scouts))))
-    line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:10} | {:5} | {:14} | {}'
-
-    lines.append(line_tmpl.format('#', 'Scout', 'Encounters', 'Enc/h',
-                                  'Last Encounter', 'Message'))
+    if have_proxies():
+        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:25} | {:10} | {:5} | {:14} | {}'
+        lines.append(
+            line_tmpl.format('#', 'Scout', 'Proxy', 'Encounters', 'Enc/h',
+                             'Last Encounter', 'Message'))
+    else:
+        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:10} | {:5} | {:14} | {}'
+        lines.append(line_tmpl.format('#', 'Scout', 'Encounters', 'Enc/h',
+                                      'Last Encounter', 'Message'))
     return print_lines(lines, scout_line, scouts, 4, state)
 
 

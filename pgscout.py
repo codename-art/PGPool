@@ -10,6 +10,7 @@ from pgscout.ScoutJob import ScoutJob
 from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get
 from pgscout.console import print_status
+from pgscout.proxy import init_proxies
 from pgscout.utils import get_pokemon_name
 
 logging.basicConfig(level=logging.INFO,
@@ -74,6 +75,8 @@ def cache_cleanup_thread():
 # ===========================================================================
 
 log.info("PGScout starting up.")
+
+init_proxies()
 
 with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):

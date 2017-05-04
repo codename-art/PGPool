@@ -11,6 +11,7 @@ from pgoapi.utilities import get_cell_ids, f2i
 
 from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
+from pgscout.proxy import get_new_proxy, have_proxies
 from pgscout.stats import inc_for_pokemon
 from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, calc_pokemon_level, \
     get_player_level, calc_iv
@@ -42,6 +43,14 @@ class Scout(object):
         # instantiate pgoapi
         self.api = PGoApi()
         self.api.activate_hash_server(cfg_get('hash_key'))
+
+        if have_proxies():
+            self.proxy = get_new_proxy()
+            self.log_info("Using Proxy: {}".format(self.proxy))
+            self.api.set_proxy({
+                'http': self.proxy,
+                'https': self.proxy
+            })
 
     def run(self):
         self.log_info("Waiting for job...")
