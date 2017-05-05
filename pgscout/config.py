@@ -1,7 +1,13 @@
 import json
 import os
 
-cfg = {}
+# Configuration with default values
+cfg = {
+    'port': 4242,
+    'proxies_file': '',
+    'require_min_trainer_level': 30,
+    'wait_after_login': 20
+}
 
 
 def cfg_get(key):
@@ -10,4 +16,5 @@ def cfg_get(key):
 
 file_path = os.path.join('config.json')
 with open(file_path, 'r') as f:
-    cfg = json.loads(f.read())
+    user_cfg = json.loads(f.read())
+    cfg.update(user_cfg)
