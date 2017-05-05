@@ -25,6 +25,7 @@ Just copy `config.json.sample` to `config.json` and fill in the information:
 * `hash_key`: Your Bossland PokeHash Key which is needed to perform any Pokémon GO related requests
 * `accounts_file`: A file containing PTC or Google accounts for Pokémon GO in [RocketMap](https://github.com/RocketMap/RocketMap) format: `auth-service,username,password`
 * `proxies_file`: A file containing proxies in `ip:port` format. Proxies will be picked round-robin. This file is optional. If you don't use proxies, just leave it empty.
+* `wait_after_login`: PGScout waits this many seconds after a successful login before it performs the encounter request. Defaults to 20.
 
 Don't forget to run `pip install -r requirements.txt` at least once before actually starting PGScout with `python pgscout.py`.
 
@@ -32,8 +33,8 @@ Don't forget to run `pip install -r requirements.txt` at least once before actua
 PGScout accepts **HTTP GET** requests at `http://<your host>:<port>/iv` and needs these parameters:
 
 * `pokemon_id`: The Pokédex number of the Pokémon
-* `encounter_id`: Encounter ID (Base64 encoded) provided by map scanner
-* `spawn_point_id`: ID of spawn point provided by map scanner
+* `encounter_id`: Encounter ID (Base64 encoded **or** as long integer) provided by map scanner
+* `spawn_point_id`: ID of spawn point provided by map scanner as string
 * `latitude`
 * `longitude`
 

@@ -278,8 +278,9 @@ class Scout(object):
                     num_tries))
             raise TooManyLoginAttempts('Exceeded login attempts.')
 
-        self.log_debug('Login successful. Waiting 20 more seconds.')
-        time.sleep(20)
+        wait_after_login = cfg_get('wait_after_login')
+        self.log_info('Login successful. Waiting {} more seconds.'.format(wait_after_login))
+        time.sleep(wait_after_login)
 
     def encounter_request(self, encounter_id, spawn_point_id, latitude, longitude):
         req = self.api.create_request()
