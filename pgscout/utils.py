@@ -9,6 +9,8 @@ import geopy.distance
 
 
 def normalize_encounter_id(eid):
+    if not eid:
+        return eid
     try:
         return long(eid)
     except:
