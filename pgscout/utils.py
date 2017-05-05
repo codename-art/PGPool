@@ -3,8 +3,16 @@ import os
 import random
 
 import math
+from base64 import b64decode
 
 import geopy.distance
+
+
+def normalize_encounter_id(eid):
+    try:
+        return long(eid)
+    except:
+        return long(b64decode(eid))
 
 
 def get_pokemon_data(pokemon_id):

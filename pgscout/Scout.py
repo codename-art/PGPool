@@ -1,7 +1,7 @@
 import logging
 import sys
 import time
-from base64 import b64decode, b64encode
+from base64 import b64encode
 from collections import deque
 
 import geopy
@@ -13,8 +13,8 @@ from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
 from pgscout.proxy import get_new_proxy, have_proxies
 from pgscout.stats import inc_for_pokemon
-from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, calc_pokemon_level, \
-    get_player_level, calc_iv
+from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, \
+    calc_pokemon_level, get_player_level, calc_iv
 
 log = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class Scout(object):
 
         # now set encounter id and spawn point id
         self.log_info("Got encounter_id for {} at {}, {}.".format(job.pokemon_name, target['latitude'], target['longitude']))
-        job.encounter_id = b64encode(str(target['encounter_id']))
+        job.encounter_id = target['encounter_id']
         job.spawn_point_id = target["spawn_point_id"]
         return True
 
@@ -177,9 +177,9 @@ class Scout(object):
         response = self.encounter_request(job.encounter_id, job.spawn_point_id, lat,
                                           lng)
 
-        return self.parse_encounter_response(response, job.pokemon_id, job.pokemon_name)
+        return self.parse_encounter_response(response, job)
 
-    def parse_encounter_response(self, response, pokemon_id, pokemon_name):
+    def parse_encounter_response(self, response, job):
         if response is None:
             return self.scout_error("Encounter response is None.")
 
@@ -208,10 +208,12 @@ class Scout(object):
         df = pokemon_info.get('individual_defense', 0)
         st = pokemon_info.get('individual_stamina', 0)
         iv = calc_iv(at, df, st)
-        moveset_grades = get_moveset_grades(pokemon_id, pokemon_name, pokemon_info['move_1'], pokemon_info['move_2'])
+        moveset_grades = get_moveset_grades(job.pokemon_id, job.pokemon_name, pokemon_info['move_1'], pokemon_info['move_2'])
 
         response = {
             'success': True,
+            'encounter_id': job.encounter_id,
+            'encounter_id_b64': b64encode(str(job.encounter_id)),
             'height': pokemon_info['height_m'],
             'weight': pokemon_info['weight_kg'],
             'gender': pokemon_info['pokemon_display']['gender'],
@@ -234,14 +236,14 @@ class Scout(object):
         }
 
         # Add form of Unown
-        if pokemon_id == 201:
+        if job.pokemon_id == 201:
             response['form'] = pokemon_info['pokemon_display'].get('form',
                                                                    None)
 
         self.log_info(
             u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(
-                iv, at, df, st, pokemon_level, pokemon_name, cp, scout_level))
-        inc_for_pokemon(pokemon_id)
+                iv, at, df, st, pokemon_level, job.pokemon_name, cp, scout_level))
+        inc_for_pokemon(job.pokemon_id)
         return response
 
     def check_login(self):
@@ -282,7 +284,7 @@ class Scout(object):
     def encounter_request(self, encounter_id, spawn_point_id, latitude, longitude):
         req = self.api.create_request()
         req.encounter(
-            encounter_id=long(b64decode(encounter_id)),
+            encounter_id=encounter_id,
             spawn_point_id=spawn_point_id,
             player_latitude=float(latitude),
             player_longitude=float(longitude))
