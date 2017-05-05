@@ -45,26 +45,28 @@ http://localhost:4242/iv?pokemon_id=70&encounter_id=MTY4MjU4OTY4Njg2MjExOTUwNA%3
 The **response** is JSON formatted and looks like this:
 ```javascript
 {
-  "success": true,
-  "encountered_time": 1493285932.471804,
-  "gender": 2,
-  "height": 0.8362829685211182,
-  "weight": 4.311457633972168,
-  "iv_percent": 55.55555555555556,
-  "iv_attack": 15,
-  "iv_defense": 5,
-  "iv_stamina": 5,
-  "move_1": 271,
-  "move_2": 118,
-  "rating_attack": "A",
-  "rating_defense": "-",
-  "cp": 659,
-  "cp_multiplier": 0.55079269,
-  "level": 17,
-  "catch_prob_1": 0.27512598037719727,
-  "catch_prob_2": 0.3828456401824951,
-  "catch_prob_3": 0.47455763816833496,
-  "scout_level": 30
+    "success": true,
+    "encounter_id": 16389112216478965452,
+    "encounter_id_b64": "MTYzODkxMTIyMTY0Nzg5NjU0NTI=",
+    "encountered_time": 1493990168.06719,
+    "iv_percent": 55.55555555555556,
+    "iv_attack": 3,
+    "iv_defense": 13,
+    "iv_stamina": 9,
+    "move_1": 230,
+    "move_2": 107,
+    "cp": 282,
+    "cp_multiplier": 0.29024988412857056,
+    "level": 5,
+    "catch_prob_1": 0.0861327052116394,
+    "catch_prob_2": 0.1263757348060608,
+    "catch_prob_3": 0.1648465394973755,
+    "gender": 1,
+    "height": 1.6896531581878662,
+    "weight": 108.0298080444336,
+    "rating_attack": "A",
+    "rating_defense": "B",
+    "scout_level": 30
 }
 ```
 
