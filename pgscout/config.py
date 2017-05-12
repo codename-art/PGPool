@@ -3,6 +3,7 @@ import os
 
 # Configuration with default values
 cfg = {
+    'host': '127.0.0.1',
     'port': 4242,
     'proxies_file': '',
     'require_min_trainer_level': 30,

@@ -21,6 +21,7 @@ An incoming web-request to PGScout will create a job that is being put in a queu
 # Configuration
 Just copy `config.json.sample` to `config.json` and fill in the information:
 
+* `host`: On which IP address the webservice will listen (default: 127.0.0.1). Set this to `0.0.0.0` to open up PGScout to the public.
 * `port`: On which port the webservice will listen (default: 4242)
 * `hash_key`: Your Bossland PokeHash Key which is needed to perform any Pokémon GO related requests
 * `accounts_file`: A file containing PTC or Google accounts for Pokémon GO in [RocketMap](https://github.com/RocketMap/RocketMap) format: `auth-service,username,password`

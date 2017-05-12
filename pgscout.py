@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
-app = Flask(__name__, static_folder='icons', static_url_path='')
+app = Flask(__name__)
 
 scouts = []
 jobs = Queue()
@@ -63,7 +63,7 @@ def get_iv():
 
 
 def run_webserver():
-    app.run(threaded=True, port=cfg_get('port'))
+    app.run(threaded=True, host=cfg_get('host'), port=cfg_get('port'))
 
 
 def cache_cleanup_thread():
