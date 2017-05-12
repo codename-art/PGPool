@@ -17,17 +17,13 @@ def normalize_encounter_id(eid):
         return long(b64decode(eid))
 
 
-def get_pokemon_data(pokemon_id):
-    if not hasattr(get_pokemon_data, 'pokemon'):
+def get_pokemon_name(pokemon_id):
+    if not hasattr(get_pokemon_name, 'pokemon'):
         file_path = os.path.join('pokemon.json')
 
         with open(file_path, 'r') as f:
-            get_pokemon_data.pokemon = json.loads(f.read())
-    return get_pokemon_data.pokemon[str(pokemon_id)]
-
-
-def get_pokemon_name(pokemon_id):
-    return get_pokemon_data(pokemon_id)['name']
+            get_pokemon_name.pokemon = json.loads(f.read())
+    return get_pokemon_name.pokemon[str(pokemon_id)]
 
 
 def get_move_name(move_id):
