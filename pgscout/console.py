@@ -26,6 +26,8 @@ def input_processor(state):
 
         if command.isdigit():
             state['page'] = int(command)
+        elif command == 'q':
+            os._exit(0)
         elif command == 'p':
             state['display'] = 'pokemon'
             state['page'] = 1
