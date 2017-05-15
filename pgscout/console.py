@@ -13,7 +13,7 @@ from threading import Thread
 from pgscout.cache import get_cached_count
 from pgscout.proxy import have_proxies
 from pgscout.stats import get_pokemon_stats
-from pgscout.utils import get_pokemon_name
+from pgscout.utils import get_pokemon_name, rss_mem_size
 
 
 def input_processor(state):
@@ -61,7 +61,9 @@ def print_status(scouts, initial_display, jobs):
             continue
 
         lines = []
-        lines.append("Job queue length: {} | Cached encounters: {}".format(jobs.qsize(), get_cached_count()))
+        lines.append(
+            "Job queue length: {} | Cached encounters: {} | Mem Usage: {}".format(
+                jobs.qsize(), get_cached_count(), rss_mem_size()))
 
         if state['display'] == 'scouts':
             total_pages = print_scouts(lines, state, scouts)
