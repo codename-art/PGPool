@@ -3,3 +3,4 @@ git+https://github.com/pogodevorg/pgoapi.git@4b0e0671ddfcba3b037002f7a8de6d2a63c
 geopy
 beautifulsoup4
 requests
+psutil
