@@ -36,6 +36,9 @@ class Scout(object):
         self.last_msg = ""
         self.total_encounters = 0
 
+        # Things needed for requests
+        self.inventory_timestamp = None
+
         # Collects the last few pauses between encounters to measure a "encounters per hour" value
         self.past_pauses = deque()
         self.encounters_per_hour = float(0)
@@ -294,15 +297,27 @@ class Scout(object):
     def perform_request(self, req, delay=12):
         req.check_challenge()
         req.get_hatched_eggs()
-        req.get_inventory()
+        if self.inventory_timestamp:
+            req.get_inventory(last_timestamp_ms=self.inventory_timestamp)
+        else:
+            req.get_inventory()
         req.check_awarded_badges()
-        req.download_settings()
         req.get_buddy_walked()
+
+        # Wait before we perform the request
         d = float(delay)
         if self.last_request and time.time() - self.last_request < d:
             time.sleep(d - (time.time() - self.last_request))
         response = req.call()
         self.last_request = time.time()
+
+        # Update inventory timestamp
+        try:
+            self.inventory_timestamp = \
+            response['GET_INVENTORY']['inventory_delta']['new_timestamp_ms']
+        except KeyError:
+            pass
+
         return response
 
     def scout_error(self, error_msg):
