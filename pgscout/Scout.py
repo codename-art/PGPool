@@ -35,6 +35,8 @@ class Scout(object):
         self.previous_encounter = None
         self.last_msg = ""
         self.total_encounters = 0
+        self.warned = None
+        self.banned = None
 
         # Things needed for requests
         self.inventory_timestamp = None
@@ -109,6 +111,18 @@ class Scout(object):
 
         self.total_encounters += 1
         self.previous_encounter = time.time()
+
+    # Returns warning/banned flags and tutorial state.
+    def update_player_state(self):
+        request = self.api.create_request()
+        request.get_player(player_locale={'country': 'US', 'language': 'en',
+                                          'timezone': 'America/Denver'})
+
+        response = request.call().get('responses', {})
+
+        get_player = response.get('GET_PLAYER', {})
+        self.warned = get_player.get('warn', False)
+        self.banned = get_player.get('banned', False)
 
     def parse_wild_pokemon(self, response):
         wild_pokemon = []
@@ -284,6 +298,7 @@ class Scout(object):
         wait_after_login = cfg_get('wait_after_login')
         self.log_info('Login successful. Waiting {} more seconds.'.format(wait_after_login))
         time.sleep(wait_after_login)
+        self.update_player_state()
 
     def encounter_request(self, encounter_id, spawn_point_id, latitude, longitude):
         req = self.api.create_request()
