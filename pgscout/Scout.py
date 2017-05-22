@@ -123,6 +123,8 @@ class Scout(object):
         get_player = response.get('GET_PLAYER', {})
         self.warned = get_player.get('warn', False)
         self.banned = get_player.get('banned', False)
+        time.sleep(4)
+
 
     def parse_wild_pokemon(self, response):
         wild_pokemon = []
