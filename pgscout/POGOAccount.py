@@ -343,9 +343,3 @@ class POGOAccount(object):
     def log_error(self, msg):
         self.last_msg = msg
         log.error("[{}] {}".format(self.username, msg))
-
-
-class TooManyLoginAttempts(Exception):
-    pass
-
-
