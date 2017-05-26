@@ -4,3 +4,4 @@ geopy
 beautifulsoup4
 requests
 psutil
+configargparse
