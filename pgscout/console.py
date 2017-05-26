@@ -84,11 +84,13 @@ def print_status(scouts, initial_display, jobs):
 
 def print_scouts(lines, state, scouts):
     def scout_line(current_line, s):
-        warned = '' if s.warned is None else ('Yes' if s.warned else 'No')
-        banned = '' if s.banned is None else ('Yes' if s.banned else 'No')
+        warn = s.player_state.get('warn')
+        banned = s.player_state.get('banned')
+        warn_str = '' if warn is None else ('Yes' if warn else 'No')
+        banned_str = '' if banned is None else ('Yes' if banned else 'No')
         if have_proxies():
             return line_tmpl.format(current_line, s.username, s.proxy,
-                                    warned, banned,
+                                    warn_str, banned_str,
                                     s.total_encounters,
                                     "{:5.1f}".format(s.encounters_per_hour),
                                     hr_tstamp(s.previous_encounter),
@@ -96,7 +98,7 @@ def print_scouts(lines, state, scouts):
         else:
             return line_tmpl.format(current_line,
                                     s.username,
-                                    warned, banned,
+                                    warn_str, banned_str,
                                     s.total_encounters,
                                     "{:5.1f}".format(s.encounters_per_hour),
                                     hr_tstamp(s.previous_encounter),

@@ -7,12 +7,13 @@ cfg = {
     'port': 4242,
     'proxies_file': '',
     'require_min_trainer_level': 30,
-    'wait_after_login': 20
+    'login_retries': 3,
+    'login_delay': 6
 }
 
 
-def cfg_get(key):
-    return cfg[key]
+def cfg_get(key, default=None):
+    return cfg.get(key, default)
 
 
 file_path = os.path.join('config.json')

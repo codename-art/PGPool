@@ -1,20 +1,17 @@
 import logging
-import sys
 import time
 from base64 import b64encode
 from collections import deque
 
 import geopy
-from pgoapi import PGoApi
-from pgoapi.exceptions import AuthException
+from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
 from pgoapi.utilities import get_cell_ids, f2i
 
+from pgscout.POGOAccount import POGOAccount
 from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
-from pgscout.proxy import get_new_proxy, have_proxies
 from pgscout.stats import inc_for_pokemon
-from pgscout.utils import jitter_location, TooManyLoginAttempts, has_captcha, \
-    calc_pokemon_level, get_player_level, calc_iv
+from pgscout.utils import calc_pokemon_level, calc_iv
 
 log = logging.getLogger(__name__)
 
@@ -22,51 +19,54 @@ log = logging.getLogger(__name__)
 # Collect this many samples to determine an encounters/hour value.
 NUM_PAUSE_SAMPLES = 3
 
+ENCOUNTER_RESULTS = {
+    0: "ENCOUNTER_ERROR",
+    1: "ENCOUNTER_SUCCESS",
+    2: "ENCOUNTER_NOT_FOUND",
+    3: "ENCOUNTER_CLOSED",
+    4: "ENCOUNTER_POKEMON_FLED",
+    5: "ENCOUNTER_NOT_IN_RANGE",
+    6: "ENCOUNTER_ALREADY_HAPPENED",
+    7: "POKEMON_INVENTORY_FULL",
+    8: "ENCOUNTER_BLOCKED_BY_ANTICHEAT"
+}
 
-class Scout(object):
+
+class Scout(POGOAccount):
     def __init__(self, auth, username, password, job_queue):
-        self.auth = auth
-        self.username = username
-        self.password = password
+        super(Scout, self).__init__(auth, username, password)
+
         self.job_queue = job_queue
+        self.shadowbanned = False
 
         # Stats
-        self.last_request = None
         self.previous_encounter = None
-        self.last_msg = ""
         self.total_encounters = 0
-        self.warned = None
-        self.banned = None
-
-        # Things needed for requests
-        self.inventory_timestamp = None
 
         # Collects the last few pauses between encounters to measure a "encounters per hour" value
         self.past_pauses = deque()
         self.encounters_per_hour = float(0)
 
-        # instantiate pgoapi
-        self.api = PGoApi()
-        self.api.activate_hash_server(cfg_get('hash_key'))
-
-        if have_proxies():
-            self.proxy = get_new_proxy()
-            self.log_info("Using Proxy: {}".format(self.proxy))
-            self.api.set_proxy({
-                'http': self.proxy,
-                'https': self.proxy
-            })
-
     def run(self):
         self.log_info("Waiting for job...")
         while True:
+            if self.shadowbanned:
+                self.log_warning("Account shadowbanned. Stopping.")
+                break
+
             job = self.job_queue.get()
             try:
                 self.log_info(u"Scouting a {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
                 # Initialize API
-                (lat, lng, alt) = jitter_location([job.lat, job.lng, job.altitude])
-                self.api.set_position(lat, lng, alt)
-                self.check_login()
+                (lat, lng) = self.jitter_location(job.lat, job.lng)
+                self.set_position(lat, lng, job.altitude)
+                if not self.check_login():
+                    job.result = self.scout_error(self.last_msg)
+
+                # Check if banned.
+                if self.player_state.get('banned'):
+                    job.result = self.scout_error("Account banned")
+                    break
 
                 if job.encounter_id and job.spawn_point_id:
                     job.result = self.scout_by_encounter_id(job)
@@ -75,27 +75,11 @@ class Scout(object):
                         job.result = self.scout_by_encounter_id(job)
                     else:
                         job.result = self.scout_error("Could not determine encounter_id for {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
-            except:
+            except :
                 job.result = self.scout_error(repr(sys.exc_info()))
             finally:
                 job.processed = True
                 self.update_history()
-
-    def log_info(self, msg):
-        self.last_msg = msg
-        log.info(msg)
-
-    def log_debug(self, msg):
-        self.last_msg = msg
-        log.debug(msg)
-
-    def log_warning(self, msg):
-        self.last_msg = msg
-        log.warning(msg)
-
-    def log_error(self, msg):
-        self.last_msg = msg
-        log.error(msg)
 
     def update_history(self):
         if self.previous_encounter:
@@ -112,23 +96,9 @@ class Scout(object):
         self.total_encounters += 1
         self.previous_encounter = time.time()
 
-    # Returns warning/banned flags and tutorial state.
-    def update_player_state(self):
-        request = self.api.create_request()
-        request.get_player(player_locale={'country': 'US', 'language': 'en',
-                                          'timezone': 'America/Denver'})
-
-        response = request.call().get('responses', {})
-
-        get_player = response.get('GET_PLAYER', {})
-        self.warned = get_player.get('warn', False)
-        self.banned = get_player.get('banned', False)
-        time.sleep(4)
-
-
     def parse_wild_pokemon(self, response):
         wild_pokemon = []
-        cells = response.get('responses', {}).get('GET_MAP_OBJECTS', {}).get('map_cells', [])
+        cells = response.get('GET_MAP_OBJECTS', {}).get('map_cells', [])
         for cell in cells:
             wild_pokemon += cell.get('wild_pokemons', [])
         return wild_pokemon
@@ -140,16 +110,15 @@ class Scout(object):
         while tries < max_tries:
             tries += 1
             try:
-                (lat, lng, alt) = self.jittered_location(job)
+                (lat, lng) = self.jittered_location(job)
                 self.log_info("Looking for {} at {}, {} - try {}".format(job.pokemon_name, lat, lng, tries))
                 cell_ids = get_cell_ids(lat, lng)
                 timestamps = [0, ] * len(cell_ids)
-                req = self.api.create_request()
-                req.get_map_objects(latitude=f2i(lat),
-                                    longitude=f2i(lng),
-                                    since_timestamp_ms=timestamps,
-                                    cell_id=cell_ids)
-                response = self.perform_request(req)
+                response = self.perform_request(
+                    lambda req: req.get_map_objects(latitude=f2i(lat),
+                                                    longitude=f2i(lng),
+                                                    since_timestamp_ms=timestamps,
+                                                    cell_id=cell_ids))
 
                 wild_pokemon = self.parse_wild_pokemon(response)
                 if len(wild_pokemon) > 0:
@@ -162,7 +131,9 @@ class Scout(object):
             return False
 
         # find all pokemon with desired id
-        candidates = filter(lambda pkm: pkm['pokemon_data']['pokemon_id'] == job.pokemon_id, wild_pokemon)
+        candidates = filter(
+            lambda pkm: pkm['pokemon_data']['pokemon_id'] == job.pokemon_id,
+            wild_pokemon)
 
         target = None
         if len(candidates) == 1:
@@ -190,33 +161,41 @@ class Scout(object):
         return True
 
     def scout_by_encounter_id(self, job):
-        (lat, lng, alt) = self.jittered_location(job)
+        (lat, lng) = self.jittered_location(job)
 
         self.log_info("Performing encounter request at {}, {}".format(lat, lng))
-        response = self.encounter_request(job.encounter_id, job.spawn_point_id, lat,
-                                          lng)
-
+        response = self.perform_request(lambda req: req.encounter(
+            encounter_id=job.encounter_id,
+            spawn_point_id=job.spawn_point_id,
+            player_latitude=float(lat),
+            player_longitude=float(lng)))
         return self.parse_encounter_response(response, job)
 
-    def parse_encounter_response(self, response, job):
-        if response is None:
-            return self.scout_error("Encounter response is None.")
+    def parse_encounter_response(self, responses, job):
+        if not responses:
+            return self.scout_error("Empty encounter response.")
 
-        if has_captcha(response):
+        if self.has_captcha(responses):
             return self.scout_error("Scout account captcha'd.")
 
-        encounter = response.get('responses', {}).get('ENCOUNTER', {})
+        encounter = responses.get('ENCOUNTER', {})
+        enc_status = encounter.get('status', None)
 
-        if encounter.get('status', None) == 3:
-            return self.scout_error("Pokemon already despawned.")
+        # Check for shadowban
+        if enc_status == 8:
+            self.shadowbanned = True
+
+        if enc_status != 1:
+            return self.scout_error(ENCOUNTER_RESULTS[enc_status])
 
         if 'wild_pokemon' not in encounter:
             return self.scout_error("No wild pokemon info found.")
 
-        scout_level = get_player_level(response)
+        scout_level = self.player_stats['level']
         if scout_level < cfg_get("require_min_trainer_level"):
             return self.scout_error(
-                "Trainer level {} is too low. Needs to be {}+".format(scout_level, cfg_get("require_min_trainer_level")))
+                "Trainer level {} is too low. Needs to be {}+".format(
+                    scout_level, cfg_get("require_min_trainer_level")))
 
         pokemon_info = encounter['wild_pokemon']['pokemon_data']
         cp = pokemon_info['cp']
@@ -227,9 +206,11 @@ class Scout(object):
         df = pokemon_info.get('individual_defense', 0)
         st = pokemon_info.get('individual_stamina', 0)
         iv = calc_iv(at, df, st)
-        moveset_grades = get_moveset_grades(job.pokemon_id, job.pokemon_name, pokemon_info['move_1'], pokemon_info['move_2'])
+        moveset_grades = get_moveset_grades(job.pokemon_id, job.pokemon_name,
+                                            pokemon_info['move_1'],
+                                            pokemon_info['move_2'])
 
-        response = {
+        responses = {
             'success': True,
             'encounter_id': job.encounter_id,
             'encounter_id_b64': b64encode(str(job.encounter_id)),
@@ -256,86 +237,14 @@ class Scout(object):
 
         # Add form of Unown
         if job.pokemon_id == 201:
-            response['form'] = pokemon_info['pokemon_display'].get('form',
-                                                                   None)
+            responses['form'] = pokemon_info['pokemon_display'].get('form',
+                                                                    None)
 
         self.log_info(
             u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(
                 iv, at, df, st, pokemon_level, job.pokemon_name, cp, scout_level))
         inc_for_pokemon(job.pokemon_id)
-        return response
-
-    def check_login(self):
-        # Logged in? Enough time left? Cool!
-        if self.api._auth_provider and self.api._auth_provider._ticket_expire:
-            remaining_time = self.api._auth_provider._ticket_expire / 1000 - time.time()
-            if remaining_time > 60:
-                self.log_debug(
-                    'Credentials remain valid for another {} seconds.'.format(remaining_time))
-                return
-
-        # Try to login. Repeat a few times, but don't get stuck here.
-        num_tries = 0
-        # One initial try + login_retries.
-        while num_tries < 3:
-            try:
-                self.api.set_authentication(
-                    provider=self.auth,
-                    username=self.username,
-                    password=self.password)
-                break
-            except AuthException:
-                num_tries += 1
-                self.log_error(
-                    'Failed to login. ' +
-                    'Trying again in {} seconds.'.format(6))
-                time.sleep(6)
-
-        if num_tries >= 3:
-            self.log_error(
-                'Failed to login for {} tries. Giving up.'.format(
-                    num_tries))
-            raise TooManyLoginAttempts('Exceeded login attempts.')
-
-        wait_after_login = cfg_get('wait_after_login')
-        self.log_info('Login successful. Waiting {} more seconds.'.format(wait_after_login))
-        time.sleep(wait_after_login)
-        self.update_player_state()
-
-    def encounter_request(self, encounter_id, spawn_point_id, latitude, longitude):
-        req = self.api.create_request()
-        req.encounter(
-            encounter_id=encounter_id,
-            spawn_point_id=spawn_point_id,
-            player_latitude=float(latitude),
-            player_longitude=float(longitude))
-        return self.perform_request(req)
-
-    def perform_request(self, req, delay=12):
-        req.check_challenge()
-        req.get_hatched_eggs()
-        if self.inventory_timestamp:
-            req.get_inventory(last_timestamp_ms=self.inventory_timestamp)
-        else:
-            req.get_inventory()
-        req.check_awarded_badges()
-        req.get_buddy_walked()
-
-        # Wait before we perform the request
-        d = float(delay)
-        if self.last_request and time.time() - self.last_request < d:
-            time.sleep(d - (time.time() - self.last_request))
-        response = req.call()
-        self.last_request = time.time()
-
-        # Update inventory timestamp
-        try:
-            self.inventory_timestamp = \
-            response['GET_INVENTORY']['inventory_delta']['new_timestamp_ms']
-        except KeyError:
-            pass
-
-        return response
+        return responses
 
     def scout_error(self, error_msg):
         self.log_error("Error: {}".format(error_msg))
@@ -345,6 +254,6 @@ class Scout(object):
         }
 
     def jittered_location(self, job):
-        (lat, lng, alt) = jitter_location([job.lat, job.lng, job.altitude])
-        self.api.set_position(lat, lng, alt)
-        return lat, lng, alt
+        (lat, lng) = self.jitter_location(job.lat, job.lng)
+        self.set_position(lat, lng, job.altitude)
+        return lat, lng
