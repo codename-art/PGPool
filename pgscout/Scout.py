@@ -38,6 +38,7 @@ class Scout(POGOAccount):
 
         self.job_queue = job_queue
         self.shadowbanned = False
+        self.active = True
 
         # Stats
         self.previous_encounter = None
@@ -80,6 +81,9 @@ class Scout(POGOAccount):
             finally:
                 job.processed = True
                 self.update_history()
+
+        # We broke out of the main loop, so something is f*cked up with this scout.
+        self.active = False
 
     def update_history(self):
         if self.previous_encounter:
