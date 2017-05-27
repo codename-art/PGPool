@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import requests
 import sys
-import time
-
-from queue import Queue
 from threading import Thread
-from random import randint
+
+import requests
+from queue import Queue
 
 from pgscout.config import cfg_get
 

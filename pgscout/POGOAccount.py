@@ -43,7 +43,7 @@ class POGOAccount(object):
 
         # Timestamp when last API request was made
         self._last_request = None
-        
+
         # Timestamp for incremental inventory updates
         self._last_timestamp_ms = None
 
