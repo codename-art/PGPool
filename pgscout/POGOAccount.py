@@ -41,6 +41,9 @@ class POGOAccount(object):
         self.inventory_balls = 0
         self.inventory_total = 0
 
+        # Timestamp when last API request was made
+        self._last_request = None
+        
         # Timestamp for incremental inventory updates
         self._last_timestamp_ms = None
 
@@ -56,8 +59,8 @@ class POGOAccount(object):
     def perform_request(self, prep_req, delay=12):
         # Wait before we perform the request
         d = float(delay)
-        if self.last_request and time.time() - self.last_request < d:
-            time.sleep(d - (time.time() - self.last_request))
+        if self._last_request and time.time() - self._last_request < d:
+            time.sleep(d - (time.time() - self._last_request))
 
         req = self.create_request()
         prep_req(req)
@@ -172,7 +175,7 @@ class POGOAccount(object):
 
     def _call_request(self, request):
         response = request.call()
-        self.last_request = time.time()
+        self._last_request = time.time()
 
         if not 'responses' in response:
             return {}
