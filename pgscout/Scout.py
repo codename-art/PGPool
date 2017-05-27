@@ -63,6 +63,7 @@ class Scout(POGOAccount):
                 self.set_position(lat, lng, job.altitude)
                 if not self.check_login():
                     job.result = self.scout_error(self.last_msg)
+                    continue
 
                 # Check if banned.
                 if self.player_state.get('banned'):

@@ -75,7 +75,7 @@ class POGOAccount(object):
         if self._api._auth_provider and self._api._auth_provider._ticket_expire:
             remaining_time = self._api._auth_provider._ticket_expire / 1000 - time.time()
             if remaining_time > 60:
-                return
+                return True
 
         # Try to login. Repeat a few times, but don't get stuck here.
         num_tries = 0
