@@ -275,7 +275,7 @@ class POGOAccount(object):
             self._call_request(request)
             time.sleep(random.uniform(.43, .97))
         except Exception as e:
-            self.log_debug(
+            self.log_error(
                 'Login failed. Exception in call request: {}'.format(repr(e)))
 
         try:  # 1 - get_player
@@ -283,7 +283,7 @@ class POGOAccount(object):
             self.update_player_state()
             time.sleep(random.uniform(.53, 1.1))
         except Exception as e:
-            self.log_debug(
+            self.log_error(
                 'Login failed. Exception in get_player: {}'.format(repr(e)))
 
         # 2 - download_remote_config needed?
@@ -300,7 +300,7 @@ class POGOAccount(object):
             self._call_request(request)
             time.sleep(random.uniform(.2, .3))
         except Exception as e:
-            self.log_debug(
+            self.log_error(
                 'Login failed. Exception in ' + 'get_player_profile: {}'.format(
                     repr(e)))
 
@@ -316,7 +316,7 @@ class POGOAccount(object):
             self._call_request(request)
             time.sleep(random.uniform(.45, .7))
         except Exception as e:
-            self.log_debug(
+            self.log_error(
                 'Login failed. Exception in level_up_rewards: {}'.format(
                     repr(e)))
 
