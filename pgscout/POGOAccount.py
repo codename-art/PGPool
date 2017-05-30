@@ -28,6 +28,10 @@ class POGOAccount(object):
         self._proxy_url = None
         if have_proxies():
             self._proxy_url = get_new_proxy()
+            self._api.set_proxy({
+                'http': self._proxy_url,
+                'https': self._proxy_url
+            })
             self.log_info("Using proxy: {}".format(self._proxy_url))
 
         # Tutorial state and warn/ban flags
