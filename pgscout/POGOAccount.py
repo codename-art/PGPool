@@ -3,7 +3,6 @@ import logging
 import math
 import random
 import time
-from threading import Lock
 
 import geopy
 from pgoapi import PGoApi
