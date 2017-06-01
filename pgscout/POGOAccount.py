@@ -18,8 +18,6 @@ log = logging.getLogger(__name__)
 
 class POGOAccount(object):
 
-    _device_info_lock = Lock()
-
     def __init__(self, auth_service, username, password):
         self.auth_service = auth_service
         self.username = username
@@ -167,11 +165,8 @@ class POGOAccount(object):
         def gen_udid():
             s = ''
             for i in range(59):
-                s += chr(random.randint(48, 122))
+                s += chr(local_random.randint(48, 122))
             return hashlib.sha1(s).hexdigest()
-
-        # Make sure no other thread interferes.
-        POGOAccount._device_info_lock.acquire()
 
         device_info = {
             'device_brand': 'Apple',
@@ -204,20 +199,18 @@ class POGOAccount(object):
         IOS10_VERSIONS = ('10.1.1', '10.2.1', '10.3.2')
 
         # Make random numbers reproducible.
-        random.seed(reduce(lambda x, y: x + y, map(ord, self.username)))
+        local_random = random.Random()
+        local_random.seed(reduce(lambda x, y: x + y, map(ord, self.username)))
 
-        device = random.choice(devices)
+        device = local_random.choice(devices)
         device_info['device_model_boot'] = device
         device_info['hardware_model'] = IPHONES[device]
         device_info['device_id'] = gen_udid()
-        device_info['firmware_type'] = random.choice(IOS10_VERSIONS)
+        device_info['firmware_type'] = local_random.choice(IOS10_VERSIONS)
 
         self.log_info("Using an {} on iOS {} with UDID {}".format(device,
             device_info['firmware_type'], device_info['device_id']))
 
-        # Re-seed RNG.
-        random.seed()
-        POGOAccount._device_info_lock.release()
         return device_info
 
     def _call_request(self, request):
