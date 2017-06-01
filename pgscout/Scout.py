@@ -180,7 +180,7 @@ class Scout(POGOAccount):
         if not responses:
             return self.scout_error("Empty encounter response.")
 
-        if self.has_captcha(responses):
+        if self.has_captcha():
             return self.scout_error("Scout account captcha'd.")
 
         encounter = responses.get('ENCOUNTER', {})

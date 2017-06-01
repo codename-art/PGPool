@@ -77,7 +77,7 @@ class POGOAccount(object):
         if self._api._auth_provider and self._api._auth_provider._ticket_expire:
             remaining_time = self._api._auth_provider._ticket_expire / 1000 - time.time()
             if remaining_time > 60:
-                return
+                return True
 
         if have_proxies() and not self._proxy_url:
             self._proxy_url = get_new_proxy()
