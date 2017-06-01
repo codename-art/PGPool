@@ -1,8 +1,9 @@
+import hashlib
 import logging
 import math
 import random
 import time
-from uuid import uuid4
+from threading import Lock
 
 import geopy
 from pgoapi import PGoApi
@@ -16,6 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class POGOAccount(object):
+
+    _device_info_lock = Lock()
 
     def __init__(self, auth_service, username, password):
         self.auth_service = auth_service
@@ -161,6 +164,15 @@ class POGOAccount(object):
     # =======================================================================
 
     def _generate_device_info(self):
+        def gen_udid():
+            s = ''
+            for i in range(59):
+                s += chr(random.randint(48, 122))
+            return hashlib.sha1(s).hexdigest()
+
+        # Make sure no other thread interferes.
+        POGOAccount._device_info_lock.acquire()
+
         device_info = {
             'device_brand': 'Apple',
             'device_model': 'iPhone',
@@ -187,16 +199,25 @@ class POGOAccount(object):
             'iPhone9,3': 'D101AP',
             'iPhone9,4': 'D111AP'
         }
+        devices = tuple(IPHONES.keys())
 
         IOS10_VERSIONS = ('10.1.1', '10.2.1', '10.3.2')
 
-        devices = tuple(IPHONES.keys())
-        device_info['device_model_boot'] = random.choice(devices)
-        device_info['hardware_model'] = IPHONES[
-            device_info['device_model_boot']]
-        device_info['device_id'] = uuid4().hex
+        # Make random numbers reproducible.
+        random.seed(reduce(lambda x, y: x + y, map(ord, self.username)))
+
+        device = random.choice(devices)
+        device_info['device_model_boot'] = device
+        device_info['hardware_model'] = IPHONES[device]
+        device_info['device_id'] = gen_udid()
         device_info['firmware_type'] = random.choice(IOS10_VERSIONS)
 
+        self.log_info("Using an {} on iOS {} with UDID {}".format(device,
+            device_info['firmware_type'], device_info['device_id']))
+
+        # Re-seed RNG.
+        random.seed()
+        POGOAccount._device_info_lock.release()
         return device_info
 
     def _call_request(self, request):
