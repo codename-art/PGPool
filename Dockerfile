@@ -15,7 +15,7 @@ EXPOSE 4242
 WORKDIR /usr/src/app
 
 # Set Entrypoint with hard-coded options
-ENTRYPOINT ["python", "./pgscout.py", "--host", "0.0.0.0"]
+ENTRYPOINT ["python", "./pgscout.py"]
 
 # Install required system packages
 RUN apk add --no-cache ca-certificates
