@@ -9,8 +9,10 @@ cfg = {
     'port': 4242,
     'proxies_file': '',
     'require_min_trainer_level': 30,
+    # API related values, usually don't need to change them
     'login_retries': 3,
-    'login_delay': 6
+    'login_delay': 6,
+    'random_seed_salt': 0
 }
 
 

@@ -161,12 +161,6 @@ class POGOAccount(object):
     # =======================================================================
 
     def _generate_device_info(self):
-        def gen_udid():
-            s = ''
-            for i in range(59):
-                s += chr(local_random.randint(48, 122))
-            return hashlib.sha1(s).hexdigest()
-
         device_info = {
             'device_brand': 'Apple',
             'device_model': 'iPhone',
@@ -199,15 +193,17 @@ class POGOAccount(object):
 
         # Make random numbers reproducible.
         local_random = random.Random()
-        local_random.seed(reduce(lambda x, y: x + y, map(ord, self.username)))
+        seed = int(hashlib.sha1(self.username).hexdigest(), 16)
+        seed += cfg_get('random_seed_salt')
+        local_random.seed(seed)
 
         device = local_random.choice(devices)
         device_info['device_model_boot'] = device
         device_info['hardware_model'] = IPHONES[device]
-        device_info['device_id'] = gen_udid()
+        device_info['device_id'] = '%032x' % local_random.randrange(16**32)
         device_info['firmware_type'] = local_random.choice(IOS10_VERSIONS)
 
-        self.log_info("Using an {} on iOS {} with UDID {}".format(device,
+        self.log_info("Using an {} on iOS {} with device ID {}".format(device,
             device_info['firmware_type'], device_info['device_id']))
 
         return device_info
