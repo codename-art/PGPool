@@ -4,13 +4,14 @@ from Queue import Queue
 from threading import Thread
 
 from flask import Flask, request, jsonify
+from mrmime import init_mr_mime
 
 from pgscout.Scout import Scout
 from pgscout.ScoutJob import ScoutJob
 from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get
 from pgscout.console import print_status
-from pgscout.proxy import init_proxies
+from pgscout.proxy import init_proxies, get_new_proxy
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
     normalize_spawn_point_id
 
@@ -20,7 +21,7 @@ logging.basicConfig(level=logging.INFO,
 log = logging.getLogger(__name__)
 
 # Silence some loggers
-logging.getLogger('pgoapi.pgoapi').setLevel(logging.WARNING)
+logging.getLogger('pgoapi').setLevel(logging.WARNING)
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 app = Flask(__name__)
@@ -78,12 +79,17 @@ def cache_cleanup_thread():
 log.info("PGScout starting up.")
 
 init_proxies()
+init_mr_mime({
+    'login_delay': cfg_get('login_delay'),
+    'login_retries': cfg_get('login_retries'),
+})
 
 with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):
         fields = line.split(",")
         fields = map(str.strip, fields)
-        scout = Scout(fields[0], fields[1], fields[2], jobs)
+        scout = Scout(fields[0], fields[1], fields[2], jobs,
+                      cfg_get('hash_key'), get_new_proxy())
         scouts.append(scout)
         t = Thread(target=scout.run, name="{}".format(scout.username))
         t.daemon = True

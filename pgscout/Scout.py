@@ -4,10 +4,10 @@ from base64 import b64encode
 from collections import deque
 
 import geopy
+from mrmime.pogoaccount import POGOAccount
 from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
 from pgoapi.utilities import get_cell_ids, f2i
 
-from pgscout.POGOAccount import POGOAccount
 from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
 from pgscout.stats import inc_for_pokemon
@@ -33,8 +33,9 @@ ENCOUNTER_RESULTS = {
 
 
 class Scout(POGOAccount):
-    def __init__(self, auth, username, password, job_queue):
-        super(Scout, self).__init__(auth, username, password)
+    def __init__(self, auth, username, password, job_queue, hash_key, proxy):
+        super(Scout, self).__init__(auth, username, password,
+                                    hash_key=hash_key, proxy_url=proxy)
 
         self.job_queue = job_queue
         self.shadowbanned = False
@@ -66,7 +67,7 @@ class Scout(POGOAccount):
                     continue
 
                 # Check if banned.
-                if self.player_state.get('banned'):
+                if self.is_banned():
                     job.result = self.scout_error("Account banned")
                     break
 
@@ -101,9 +102,9 @@ class Scout(POGOAccount):
         self.total_encounters += 1
         self.previous_encounter = time.time()
 
-    def parse_wild_pokemon(self, response):
+    def parse_wild_pokemon(self, responses):
         wild_pokemon = []
-        cells = response.get('GET_MAP_OBJECTS', {}).get('map_cells', [])
+        cells = responses.get('GET_MAP_OBJECTS', {}).get('map_cells', [])
         for cell in cells:
             wild_pokemon += cell.get('wild_pokemons', [])
         return wild_pokemon
@@ -169,12 +170,12 @@ class Scout(POGOAccount):
         (lat, lng) = self.jittered_location(job)
 
         self.log_info("Performing encounter request at {}, {}".format(lat, lng))
-        response = self.perform_request(lambda req: req.encounter(
+        responses = self.perform_request(lambda req: req.encounter(
             encounter_id=job.encounter_id,
             spawn_point_id=job.spawn_point_id,
             player_latitude=float(lat),
             player_longitude=float(lng)))
-        return self.parse_encounter_response(response, job)
+        return self.parse_encounter_response(responses, job)
 
     def parse_encounter_response(self, responses, job):
         if not responses:
@@ -186,7 +187,7 @@ class Scout(POGOAccount):
         encounter = responses.get('ENCOUNTER', {})
         enc_status = encounter.get('status', None)
 
-        # Check for shadowban
+        # Check for shadowban - ENCOUNTER_BLOCKED_BY_ANTICHEAT
         if enc_status == 8:
             self.shadowbanned = True
 

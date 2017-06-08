@@ -172,14 +172,9 @@ def check_proxies():
 
 # Provide new proxy
 def get_new_proxy():
-
-    global last_proxy
-
+    if not have_proxies():
+        return None
     # Simply get next proxy.
-    if last_proxy >= len(proxies) - 1:
-        last_proxy = 0
-    else:
-        last_proxy = last_proxy + 1
-    lp = last_proxy
-
-    return proxies[lp]
+    global last_proxy
+    last_proxy = (last_proxy + 1) % len(proxies)
+    return proxies[last_proxy]
