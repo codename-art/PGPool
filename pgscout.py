@@ -4,7 +4,6 @@ from Queue import Queue
 from threading import Thread
 
 from flask import Flask, request, jsonify
-from mrmime import init_mr_mime
 
 from pgscout.Scout import Scout
 from pgscout.ScoutJob import ScoutJob
@@ -79,10 +78,6 @@ def cache_cleanup_thread():
 log.info("PGScout starting up.")
 
 init_proxies()
-init_mr_mime({
-    'login_delay': cfg_get('login_delay'),
-    'login_retries': cfg_get('login_retries'),
-})
 
 with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):
