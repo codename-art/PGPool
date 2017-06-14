@@ -5,6 +5,7 @@ from collections import deque
 
 import geopy
 from mrmime.pogoaccount import POGOAccount
+from mrmime.utils import jitter_location
 from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
 from pgoapi.utilities import get_cell_ids, f2i
 
@@ -60,7 +61,7 @@ class Scout(POGOAccount):
             try:
                 self.log_info(u"Scouting a {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
                 # Initialize API
-                (lat, lng) = self.jitter_location(job.lat, job.lng)
+                (lat, lng) = jitter_location(job.lat, job.lng)
                 self.set_position(lat, lng, job.altitude)
                 if not self.check_login():
                     job.result = self.scout_error(self.last_msg)
@@ -260,6 +261,6 @@ class Scout(POGOAccount):
         }
 
     def jittered_location(self, job):
-        (lat, lng) = self.jitter_location(job.lat, job.lng)
+        (lat, lng) = jitter_location(job.lat, job.lng)
         self.set_position(lat, lng, job.altitude)
         return lat, lng
