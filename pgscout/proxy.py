@@ -116,12 +116,16 @@ def check_proxies():
 
     log.info('Loading proxies from file {}.'.format(proxies_file))
 
-    with open(proxies_file) as f:
-        for line in f:
-            # Ignore blank lines and comment lines.
-            if len(line.strip()) == 0 or line.startswith('#'):
-                continue
-            source_proxies.append(line.strip())
+    try:
+        with open(proxies_file) as f:
+            for line in f:
+                # Ignore blank lines and comment lines.
+                if len(line.strip()) == 0 or line.startswith('#'):
+                    continue
+                source_proxies.append(line.strip())
+    except IOError:
+        log.error('Could not load proxies from {}.'.format(proxies_file))
+        return []
 
     log.info('Loaded {} proxies.'.format(len(source_proxies)))
 
