@@ -1,9 +1,7 @@
 import json
-import os
 
 # Configuration with default values
 import configargparse
-from mrmime import init_mr_mime
 
 cfg = {
     'host': '127.0.0.1',
@@ -29,9 +27,3 @@ args = parser.parse_args()
 with open(args.config, 'r') as f:
     user_cfg = json.loads(f.read())
     cfg.update(user_cfg)
-
-init_mr_mime({
-    'login_delay': cfg['login_delay'],
-    'login_retries': cfg['login_retries']
-})
-
