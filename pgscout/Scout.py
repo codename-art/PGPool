@@ -34,9 +34,9 @@ ENCOUNTER_RESULTS = {
 
 
 class Scout(POGOAccount):
-    def __init__(self, auth, username, password, job_queue, hash_key, proxy):
+    def __init__(self, auth, username, password, job_queue, hash_key_provider, proxy_provider):
         super(Scout, self).__init__(auth, username, password,
-                                    hash_key=hash_key, proxy_url=proxy)
+                                    hash_key_provider=hash_key_provider, proxy_provider=proxy_provider)
 
         self.job_queue = job_queue
         self.shadowbanned = False

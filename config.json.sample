@@ -1,10 +1,13 @@
 {
   "host": "127.0.0.1",
   "port": 4242,
-  "hash_key": "<YOUR BOSSLAND HASH KEY>",
+  "hash_key": "<SINGLE BOSSLAND HASH KEY>"
+  "hash_keys": [
+    "<YOUR BOSSLAND HASH KEY>",
+    "<ANOTHER BOSSLAND HASH KEY>"
+  ],
+  "hash_key_file": "<FILE CONTAINING BOSSLAND HASH KEYS>",
   "accounts_file": "<FILE CONTAINING LVL30+ ACCOUNTS IN ROCKETMAP FORMAT>",
   "proxies_file": "<FILE CONTAINING PROXIES AS IP:PORT PER LINE>",
-  "require_min_trainer_level": 30,
-  "login_retries": 3,
-  "login_delay": 6
+  "require_min_trainer_level": 30
 }
