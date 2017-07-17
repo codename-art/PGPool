@@ -12,7 +12,7 @@ from pgscout.ScoutJob import ScoutJob
 from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get
 from pgscout.console import print_status
-from pgscout.proxy import init_proxies, proxies
+from pgscout.proxy import init_proxies, get_proxies
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
     normalize_spawn_point_id
 
@@ -121,7 +121,9 @@ if hash_keys and len(hash_keys) > 0:
         hash_key_provider.add_resource(hk)
     log.info("Loaded {} hash keys from file {}.".format(len(hash_keys), cfg_get('hash_key_file')))
 
-proxy_provider = CyclicResourceProvider(proxies)
+proxy_provider = CyclicResourceProvider()
+for proxy in get_proxies():
+    proxy_provider.add_resource(proxy)
 
 with open(cfg_get('accounts_file'), 'r') as f:
     for num, line in enumerate(f, 1):

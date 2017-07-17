@@ -33,6 +33,10 @@ def init_proxies():
     proxies = check_proxies()
 
 
+def get_proxies():
+    return proxies
+
+
 def have_proxies():
     return len(proxies) > 0
 
