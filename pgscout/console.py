@@ -87,7 +87,7 @@ def print_scouts(lines, state, scouts):
         warn = s.player_state.get('warn')
         warn_str = '' if warn is None else ('Yes' if warn else 'No')
         active = 'Yes' if s.active else 'No'
-        if s.uses_proxy():
+        if have_proxies():
             return line_tmpl.format(current_line, s.username, s.proxy_url,
                                     warn_str, active,
                                     s.total_encounters,
