@@ -18,7 +18,7 @@ def read_moveset_grades():
         all_movesets = json.load(infile)
 
 
-def write_moveset_rankings():
+def write_moveset_grades():
     with open('pokemon_moveset_grades.json', 'w') as outfile:
         json.dump(all_movesets, outfile, indent=2)
 
@@ -27,7 +27,7 @@ def get_moveset_grades(pokemon_id, pokemon_name, move1, move2):
     global all_movesets
     if not pokemon_name in all_movesets:
         all_movesets[pokemon_name] = scrape_movesets(pokemon_id)
-        write_moveset_rankings()
+        write_moveset_grades()
 
     movesets = all_movesets.get(pokemon_name, {})
     moveset_key = "{} / {}".format(get_move_name(move1), get_move_name(move2))
@@ -46,32 +46,27 @@ def scrape_movesets(pokemon_id):
     r = requests.get('https://pokemongo.gamepress.gg/pokemon/{}'.format(pokemon_id))
     soup = BeautifulSoup(r.text, "html.parser")
 
-    result = soup.find_all('div', 'field-collection-item--name-field-recommend-offensive-moves')
-    for r in result:
-        parse_moveset(movesets, r, 'offense')
+    result = soup.find('div', 'view-moveset').div.table.tbody
+    for row in result.find_all('tr'):
+        qm_td = row.find('td', 'views-field-field-quick-move')
+        qm = qm_td.article.h2.a.span.text
 
-    result = soup.find_all('div', 'field-collection-item--name-field-recommended-defensive-move')
-    for r in result:
-        parse_moveset(movesets, r, 'defense')
+        cm_td = row.find('td', 'views-field-field-charge-move')
+        cm = cm_td.article.h2.a.span.text
+
+        off_grade_td = row.find('td', 'views-field-field-offensive-moveset-grade')
+        off_grade = off_grade_td.div.text
+
+        def_grade_td = row.find('td', 'views-field-field-defensive-moveset-grade')
+        def_grade = def_grade_td.div.text
+
+        moveset_key = "{} / {}".format(qm, cm)
+        movesets[moveset_key] = {
+            'offense': off_grade,
+            'defense': def_grade
+        }
 
     return movesets
-
-
-def parse_moveset(movesets, row, stance):
-    css_class = 'offensive' if stance == 'offense' else 'defensive'
-
-    m1_el = row.find('div', 'field--name-field-{}-quick-move'.format(css_class))
-    m2_el = row.find('div', 'field--name-field-{}-charge-move'.format(css_class))
-    rating_el = row.find('div', 'move-rating')
-
-    if m1_el and m2_el and rating_el:
-        m1 = m1_el.a.text
-        m2 = m2_el.a.text
-        rating = rating_el.text
-        moveset_key = "{} / {}".format(m1, m2)
-        moveset = movesets.get(moveset_key, {})
-        moveset[stance] = rating
-        movesets[moveset_key] = moveset
 
 
 # ===========================================================================
