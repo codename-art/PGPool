@@ -41,32 +41,33 @@ def get_moveset_grades(pokemon_id, pokemon_name, move1, move2):
 
 
 def scrape_movesets(pokemon_id):
-    movesets = {}
+    try:
+        movesets = {}
+        r = requests.get('https://pokemongo.gamepress.gg/pokemon/{}'.format(pokemon_id))
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    r = requests.get('https://pokemongo.gamepress.gg/pokemon/{}'.format(pokemon_id))
-    soup = BeautifulSoup(r.text, "html.parser")
+        result = soup.find('div', 'view-moveset').div.table.tbody
+        for row in result.find_all('tr'):
+            qm_td = row.find('td', 'views-field-field-quick-move')
+            qm = qm_td.article.h2.a.span.text
 
-    result = soup.find('div', 'view-moveset').div.table.tbody
-    for row in result.find_all('tr'):
-        qm_td = row.find('td', 'views-field-field-quick-move')
-        qm = qm_td.article.h2.a.span.text
+            cm_td = row.find('td', 'views-field-field-charge-move')
+            cm = cm_td.article.h2.a.span.text
 
-        cm_td = row.find('td', 'views-field-field-charge-move')
-        cm = cm_td.article.h2.a.span.text
+            off_grade_td = row.find('td', 'views-field-field-offensive-moveset-grade')
+            off_grade = off_grade_td.div.text
 
-        off_grade_td = row.find('td', 'views-field-field-offensive-moveset-grade')
-        off_grade = off_grade_td.div.text
+            def_grade_td = row.find('td', 'views-field-field-defensive-moveset-grade')
+            def_grade = def_grade_td.div.text
 
-        def_grade_td = row.find('td', 'views-field-field-defensive-moveset-grade')
-        def_grade = def_grade_td.div.text
-
-        moveset_key = "{} / {}".format(qm, cm)
-        movesets[moveset_key] = {
-            'offense': off_grade,
-            'defense': def_grade
-        }
-
-    return movesets
+            moveset_key = "{} / {}".format(qm, cm)
+            movesets[moveset_key] = {
+                'offense': off_grade,
+                'defense': def_grade
+            }
+        return movesets
+    except:
+        return {}
 
 
 # ===========================================================================
