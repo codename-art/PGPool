@@ -1,5 +1,5 @@
 flask
-git+https://github.com/pogodevorg/pgoapi.git@78921f0#egg=pgoapi
+git+https://github.com/pogodevorg/pgoapi.git@85abbb9#egg=pgoapi
 git+https://github.com/sLoPPydrive/MrMime.git#egg=MrMime
 geopy
 beautifulsoup4
