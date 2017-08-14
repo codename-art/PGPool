@@ -5,7 +5,7 @@ from timeit import default_timer
 
 import copy
 from peewee import DateTimeField, CharField, SmallIntegerField, IntegerField, \
-    DoubleField, BooleanField, InsertQuery, Model
+    DoubleField, BooleanField, InsertQuery, Model, BigIntegerField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -20,46 +20,6 @@ flaskDb = FlaskDB()
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
     pass
 
-
-  # "GET_INBOX": {
-  #   "result": 1,
-  #   "inbox": {
-  #     "builtin_variables": [
-  #       {
-  #         "literal": "tryecvio32",
-  #         "name": "CODE_NAME"
-  #       },
-  #       {
-  #         "name": "TEAM",
-  #         "key": "UNSET"
-  #       },
-  #       {
-  #         "literal": "8",
-  #         "name": "LEVEL"
-  #       },
-  #       {
-  #         "literal": "34740",
-  #         "name": "EXPERIENCE"
-  #       },
-  #       {
-  #         "literal": "0",
-  #         "name": "POKECOIN_BALANCE"
-  #       },
-  #       {
-  #         "literal": "1500",
-  #         "name": "STARDUST_BALANCE"
-  #       },
-  #       {
-  #         "literal": "starshine4815+tryecvio32@gmail.com",
-  #         "name": "EMAIL"
-  #       },
-  #       {
-  #         "literal": "Pokemon Trainer Club",
-  #         "name": "LOGIN_METHOD"
-  #       }
-  #     ]
-  #   }
-  # },
 
 class Account(flaskDb.Model):
     auth_service = CharField(max_length=6, default='ptc')
@@ -96,44 +56,41 @@ class Account(flaskDb.Model):
     pokemon = SmallIntegerField(null=True)
     eggs = SmallIntegerField(null=True)
     incubators = SmallIntegerField(null=True)
-    # other fields
-    awarded_to_level = SmallIntegerField(null=True)
 
-    @staticmethod
-    def db_format(data):
-        return {
-            'auth_service': data.get('auth_service'),
-            'username': data.get('username'),
-            'password': data.get('password'),
-            'email': data.get('email'),
-            'last_modified': datetime.utcnow(),
-            'system_id': data.get('system_id'),
-            'latitude': data.get('latitude'),
-            'longitude': data.get('longitude'),
-            'level': data.get('level'),
-            'xp': data.get('xp'),
-            'encounters': data.get('encounters'),
-            'balls_thrown': data.get('balls_thrown'),
-            'captures': data.get('captures'),
-            'spins': data.get('spins'),
-            'walked': data.get('walked'),
-            'team': data.get('team'),
-            'coins': data.get('coins'),
-            'stardust': data.get('stardust'),
-            'warn': data.get('warn'),
-            'banned': data.get('banned'),
-            'ban_flag': data.get('ban_flag'),
-            'tutorial_state': data.get('tutorial_state'),
-            'captcha': data.get('captcha'),
-            'rareless_scans': data.get('rareless_scans'),
-            'shadowbanned': data.get('shadowbanned'),
-            'balls': data.get('balls'),
-            'total_items': data.get('total_items'),
-            'pokemon': data.get('pokemon'),
-            'eggs': data.get('eggs'),
-            'incubators': data.get('incubators'),
-            'awarded_to_level': data.get('awarded_to_level')
-        }
+    # @staticmethod
+    # def db_format(data):
+    #     return {
+    #         'auth_service': data.get('auth_service'),
+    #         'username': data.get('username'),
+    #         'password': data.get('password'),
+    #         'email': data.get('email'),
+    #         'last_modified': datetime.utcnow(),
+    #         'system_id': data.get('system_id'),
+    #         'latitude': data.get('latitude'),
+    #         'longitude': data.get('longitude'),
+    #         'level': data.get('level'),
+    #         'xp': data.get('xp'),
+    #         'encounters': data.get('encounters'),
+    #         'balls_thrown': data.get('balls_thrown'),
+    #         'captures': data.get('captures'),
+    #         'spins': data.get('spins'),
+    #         'walked': data.get('walked'),
+    #         'team': data.get('team'),
+    #         'coins': data.get('coins'),
+    #         'stardust': data.get('stardust'),
+    #         'warn': data.get('warn'),
+    #         'banned': data.get('banned'),
+    #         'ban_flag': data.get('ban_flag'),
+    #         'tutorial_state': data.get('tutorial_state'),
+    #         'captcha': data.get('captcha'),
+    #         'rareless_scans': data.get('rareless_scans'),
+    #         'shadowbanned': data.get('shadowbanned'),
+    #         'balls': data.get('balls'),
+    #         'total_items': data.get('total_items'),
+    #         'pokemon': data.get('pokemon'),
+    #         'eggs': data.get('eggs'),
+    #         'incubators': data.get('incubators')
+    #     }
 
     @staticmethod
     def get_unused(system_id, count=1, min_level=1, lat=None, lng=None):
@@ -150,6 +107,16 @@ class Account(flaskDb.Model):
             account.save()
 
 
+class Event(flaskDb.Model):
+    timestamp = DateTimeField(default=datetime.now, index=True)
+    type = CharField(max_length=16)
+    entity_id = CharField(index=True)
+    description = CharField()
+
+
+# ===========================================================================
+
+
 def init_database(app):
     log.info('Connecting to MySQL database on %s:%i...',
              cfg_get('db_host'), cfg_get('db_port'))
@@ -164,6 +131,7 @@ def init_database(app):
         charset='utf8')
     app.config['DATABASE'] = db
     flaskDb.init_app(app)
+    create_tables(db)
     return db
 
 
@@ -199,8 +167,51 @@ def db_updater(q, db):
             time.sleep(5)
 
 
-def eval_acc_state_changes(acc_previous, acc):
-    pass
+def new_account_event(acc, description):
+    evt = Event(type='account', entity_id=acc.username, description=description)
+    evt.save()
+    log.info("Event for account {}: {}".format(acc.username, description))
+
+def cmp_bool(b1, b2):
+    if b1 is None or b2 is None:
+        return None
+    if not b1 and b2:
+        return True
+    elif b1 and not b2:
+        return False
+    else:
+        return None
+
+def eval_acc_state_changes(acc_prev, acc_curr):
+    level_prev = acc_prev.level
+    level_curr = acc_curr.level
+    if level_prev is not None and level_curr is not None and level_prev < level_curr:
+        new_account_event(acc_curr, "Level {} reached".format(level_curr))
+
+    got_true = cmp_bool(acc_prev.warn, acc_curr.warn)
+    if got_true is not None:
+        new_account_event(acc_curr, "Got warn flag :-/") if got_true else new_account_event(acc_curr, "Warn flag lifted :-)")
+
+    got_true = cmp_bool(acc_prev.shadowbanned, acc_curr.shadowbanned)
+    if got_true is not None:
+        new_account_event(acc_curr, "Got shadowban flag :-(") if got_true else new_account_event(acc_curr, "Shadowban flag lifted :-)")
+
+    got_true = cmp_bool(acc_prev.banned, acc_curr.banned)
+    if got_true is not None:
+        new_account_event(acc_curr, "Got banned :-(((") if got_true else new_account_event(acc_curr, "Ban lifted :-)))")
+
+    got_true = cmp_bool(acc_prev.ban_flag, acc_curr.ban_flag)
+    if got_true is not None:
+        new_account_event(acc_curr, "Got ban flag :-X") if got_true else new_account_event(acc_curr, "Ban flag lifted :-O")
+
+    got_true = cmp_bool(acc_prev.captcha, acc_curr.captcha)
+    if got_true is not None:
+        new_account_event(acc_curr, "Got CAPTCHA'd :-|") if got_true else new_account_event(acc_curr, "CAPTCHA solved :-)")
+
+    if acc_prev.rareless_scans == 0 and acc_curr.rareless_scans > 0:
+        new_account_event(acc_curr, "Started seeing only commons :-/")
+    if acc_prev.rareless_scans > 0 and acc_curr.rareless_scans == 0:
+        new_account_event(acc_curr, "Saw rares again :-)")
 
 
 def update_account(data, db):
@@ -211,10 +222,10 @@ def update_account(data, db):
             for key, value in data.items():
                 if value is not None:
                     setattr(acc, key, value)
-            acc.last_modified = datetime.utcnow()
+            acc.last_modified = datetime.now()
             eval_acc_state_changes(acc_previous, acc)
             acc.save()
-            log.info("Updated {}: {}".format(acc.username, str(data)))
+            log.info("Processed update for {}".format(acc.username))
         except Exception as e:
             # If there is a DB table constraint error, dump the data and
             # don't retry.
@@ -234,7 +245,7 @@ def update_account(data, db):
 
 def create_tables(db):
     db.connect()
-    tables = [Account]
+    tables = [Account, Event]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)

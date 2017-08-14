@@ -14,6 +14,9 @@ from pgpool.models import init_database, create_tables, db_updater, Account
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
 
+# Silence some loggers
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -83,7 +86,6 @@ def run_server():
 # ---------------------------------------------------------------------------
 
 db = init_database(app)
-create_tables(db)
 
 # DB Updates
 db_updates_queue = Queue()
@@ -94,4 +96,5 @@ t.daemon = True
 t.start()
 
 
+log.info("PGPool starting up...")
 run_server()
