@@ -84,7 +84,7 @@ def print_status(scouts, initial_display, jobs):
 
 def print_scouts(lines, state, scouts):
     def scout_line(current_line, s):
-        warn = s.player_state.get('warn')
+        warn = s.get_state('warn')
         warn_str = '' if warn is None else ('Yes' if warn else 'No')
         active = 'Yes' if s.active else 'No'
         if have_proxies():

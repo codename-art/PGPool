@@ -76,6 +76,7 @@ class Scout(POGOAccount):
                     job.result = self.scout_by_encounter_id(job)
                 else:
                     if self.find_pokemon(job):
+                        time.sleep(2)
                         job.result = self.scout_by_encounter_id(job)
                     else:
                         job.result = self.scout_error("Could not determine encounter_id for {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
@@ -105,9 +106,9 @@ class Scout(POGOAccount):
 
     def parse_wild_pokemon(self, responses):
         wild_pokemon = []
-        cells = responses.get('GET_MAP_OBJECTS', {}).get('map_cells', [])
+        cells = responses['GET_MAP_OBJECTS'].map_cells
         for cell in cells:
-            wild_pokemon += cell.get('wild_pokemons', [])
+            wild_pokemon += cell.wild_pokemons
         return wild_pokemon
 
     def find_pokemon(self, job):
@@ -117,16 +118,9 @@ class Scout(POGOAccount):
         while tries < max_tries:
             tries += 1
             try:
-                (lat, lng) = self.jittered_location(job)
-                self.log_info("Looking for {} at {}, {} - try {}".format(job.pokemon_name, lat, lng, tries))
-                cell_ids = get_cell_ids(lat, lng)
-                timestamps = [0, ] * len(cell_ids)
-                response = self.perform_request(
-                    lambda req: req.get_map_objects(latitude=f2i(lat),
-                                                    longitude=f2i(lng),
-                                                    since_timestamp_ms=timestamps,
-                                                    cell_id=cell_ids))
-
+                self.log_info("Looking for {} at {}, {} - try {}".format(job.pokemon_name, job.lat, job.lng, tries))
+                self.set_position(job.lat, job.lng, job.altitude)
+                response = self.req_get_map_objects()
                 wild_pokemon = self.parse_wild_pokemon(response)
                 if len(wild_pokemon) > 0:
                     break
@@ -139,7 +133,7 @@ class Scout(POGOAccount):
 
         # find all pokemon with desired id
         candidates = filter(
-            lambda pkm: pkm['pokemon_data']['pokemon_id'] == job.pokemon_id,
+            lambda pkm: pkm.pokemon_data.pokemon_id == job.pokemon_id,
             wild_pokemon)
 
         target = None
@@ -151,31 +145,25 @@ class Scout(POGOAccount):
             loc = (job.lat, job.lng)
             min_dist = False
             for pkm in candidates:
-                d = geopy.distance.distance(loc, (pkm["latitude"], pkm["longitude"])).meters
+                d = geopy.distance.distance(loc, (pkm.latitude, pkm.longitude)).meters
                 if not min_dist or d < min_dist:
                     min_dist = d
                     target = pkm
 
         # no pokemon found
         if target is None:
-            self.log_info("No wild {} found at {}, {}.".format(job.pokemon_name, lat, lng))
+            self.log_info("No wild {} found at {}, {}.".format(job.pokemon_name, job.lat, job.lng))
             return False
 
         # now set encounter id and spawn point id
-        self.log_info("Got encounter_id for {} at {}, {}.".format(job.pokemon_name, target['latitude'], target['longitude']))
-        job.encounter_id = target['encounter_id']
-        job.spawn_point_id = target["spawn_point_id"]
+        self.log_info("Got encounter_id for {} at {}, {}.".format(job.pokemon_name, target.latitude, target.longitude))
+        job.encounter_id = target.encounter_id
+        job.spawn_point_id = target.spawn_point_id
         return True
 
     def scout_by_encounter_id(self, job):
-        (lat, lng) = self.jittered_location(job)
-
-        self.log_info("Performing encounter request at {}, {}".format(lat, lng))
-        responses = self.perform_request(lambda req: req.encounter(
-            encounter_id=job.encounter_id,
-            spawn_point_id=job.spawn_point_id,
-            player_latitude=float(lat),
-            player_longitude=float(lng)))
+        self.log_info("Performing encounter request at {}, {}".format(job.lat, job.lng))
+        responses = self.req_encounter(job.encounter_id, job.spawn_point_id, float(job.lat), float(job.lng))
         return self.parse_encounter_response(responses, job)
 
     def parse_encounter_response(self, responses, job):
@@ -185,8 +173,13 @@ class Scout(POGOAccount):
         if self.has_captcha():
             return self.scout_error("Scout account captcha'd.")
 
-        encounter = responses.get('ENCOUNTER', {})
-        enc_status = encounter.get('status', None)
+        encounter = responses.get('ENCOUNTER')
+        if not encounter:
+            return self.scout_error("No encounter result returned.")
+        if not encounter.HasField('wild_pokemon'):
+            return self.scout_error("No wild pokemon info found.")
+
+        enc_status = encounter.status
 
         # Check for shadowban - ENCOUNTER_BLOCKED_BY_ANTICHEAT
         if enc_status == 8:
@@ -195,45 +188,42 @@ class Scout(POGOAccount):
         if enc_status != 1:
             return self.scout_error(ENCOUNTER_RESULTS[enc_status])
 
-        if 'wild_pokemon' not in encounter:
-            return self.scout_error("No wild pokemon info found.")
-
-        scout_level = self.player_stats['level']
-        if scout_level < cfg_get("require_min_trainer_level"):
+        scout_level = self.get_stats('level')
+        if scout_level < cfg_get('require_min_trainer_level'):
             return self.scout_error(
                 "Trainer level {} is too low. Needs to be {}+".format(
                     scout_level, cfg_get("require_min_trainer_level")))
 
-        pokemon_info = encounter['wild_pokemon']['pokemon_data']
-        cp = pokemon_info['cp']
-        pokemon_level = calc_pokemon_level(pokemon_info['cp_multiplier'])
-        probs = encounter['capture_probability']['capture_probability']
+        pokemon_info = encounter.wild_pokemon.pokemon_data
+        cp = pokemon_info.cp
+        pokemon_level = calc_pokemon_level(pokemon_info.cp_multiplier)
+        probs = encounter.capture_probability.capture_probability
 
-        at = pokemon_info.get('individual_attack', 0)
-        df = pokemon_info.get('individual_defense', 0)
-        st = pokemon_info.get('individual_stamina', 0)
+        at = pokemon_info.individual_attack
+        df = pokemon_info.individual_defense
+        st = pokemon_info.individual_stamina
         iv = calc_iv(at, df, st)
         moveset_grades = get_moveset_grades(job.pokemon_id, job.pokemon_name,
-                                            pokemon_info['move_1'],
-                                            pokemon_info['move_2'])
+                                            pokemon_info.move_1,
+                                            pokemon_info.move_2)
 
         responses = {
             'success': True,
             'encounter_id': job.encounter_id,
             'encounter_id_b64': b64encode(str(job.encounter_id)),
-            'height': pokemon_info['height_m'],
-            'weight': pokemon_info['weight_kg'],
-            'gender': pokemon_info['pokemon_display']['gender'],
+            'height': pokemon_info.height_m,
+            'weight': pokemon_info.weight_kg,
+            'gender': pokemon_info.pokemon_display.gender,
             'iv_percent': iv,
             'iv_attack': at,
             'iv_defense': df,
             'iv_stamina': st,
-            'move_1': pokemon_info['move_1'],
-            'move_2': pokemon_info['move_2'],
+            'move_1': pokemon_info.move_1,
+            'move_2': pokemon_info.move_2,
             'rating_attack': moveset_grades['offense'],
             'rating_defense': moveset_grades['defense'],
             'cp': cp,
-            'cp_multiplier': pokemon_info['cp_multiplier'],
+            'cp_multiplier': pokemon_info.cp_multiplier,
             'level': pokemon_level,
             'catch_prob_1': probs[0],
             'catch_prob_2': probs[1],
@@ -244,8 +234,7 @@ class Scout(POGOAccount):
 
         # Add form of Unown
         if job.pokemon_id == 201:
-            responses['form'] = pokemon_info['pokemon_display'].get('form',
-                                                                    None)
+            responses['form'] = pokemon_info.pokemon_display.form
 
         self.log_info(
             u"Found a {:.1f}% ({}/{}/{}) L{} {} with {} CP (scout level {}).".format(
