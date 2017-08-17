@@ -51,6 +51,30 @@ def get_accounts():
     return jsonify(accounts)
 
 
+@app.route('/account/release', methods=['POST'])
+def release_accounts():
+    data = json.loads(request.data)
+    if isinstance(data, list):
+        for update in data:
+            update.system_id = None
+            db_updates_queue.put(update)
+    else:
+        db_updates_queue.put(data)
+    return 'ok'
+
+
+
+@app.route('/account/update', methods=['POST'])
+def accounts_update():
+    data = json.loads(request.data)
+    if isinstance(data, list):
+        for update in data:
+            db_updates_queue.put(update)
+    else:
+        db_updates_queue.put(data)
+    return 'ok'
+
+
 # @app.route('/account/csvimport', methods=['POST'])
 # def import_csv_accounts():
 #     log.debug("new_accounts request received from {}.".format(request.remote_addr))
@@ -74,17 +98,6 @@ def get_accounts():
 #                 log.info("Imported new {} account {}".format(auth_service, username))
 #                 num_accounts += 1
 #     return "{} new accounts imported.".format(num_accounts)
-
-
-@app.route('/account/update', methods=['POST'])
-def accounts_update():
-    data = json.loads(request.data)
-    if isinstance(data, list):
-        for update in data:
-            db_updates_queue.put(update)
-    else:
-        db_updates_queue.put(data)
-    return 'ok'
 
 
 def run_server():

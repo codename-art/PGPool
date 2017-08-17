@@ -29,7 +29,7 @@ class Account(flaskDb.Model):
     password = CharField(null=True)
     email = CharField(null=True)
     last_modified = DateTimeField(index=True, default=datetime.utcnow)
-    system_id = CharField(index=True, null=True)       # system which uses the account
+    system_id = CharField(index=True, null=True)  # system which uses the account
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
     # from player_stats
@@ -48,7 +48,7 @@ class Account(flaskDb.Model):
     warn = BooleanField(null=True)
     banned = BooleanField(index=True, null=True)
     ban_flag = BooleanField(null=True)
-    tutorial_state = CharField(null=True) # a CSV-list of tutorial steps completed
+    tutorial_state = CharField(null=True)  # a CSV-list of tutorial steps completed
     captcha = BooleanField(index=True, null=True)
     rareless_scans = IntegerField(index=True, null=True)
     shadowbanned = BooleanField(index=True, null=True)
@@ -116,6 +116,7 @@ class Account(flaskDb.Model):
             account.system_id = system_id
             account.last_modified = datetime.now()
             account.save()
+            new_account_event(account, "Got assigned to [{}]".format(system_id))
             data = model_to_dict(account)
             accounts.append({
                 'auth_service': data.get('auth_service'),
@@ -197,6 +198,7 @@ def new_account_event(acc, description):
     evt.save()
     log.info("Event for account {}: {}".format(acc.username, description))
 
+
 def cmp_bool(b1, b2):
     if b1 is None or b2 is None:
         return None
@@ -207,6 +209,7 @@ def cmp_bool(b1, b2):
     else:
         return None
 
+
 def eval_acc_state_changes(acc_prev, acc_curr):
     level_prev = acc_prev.level
     level_curr = acc_curr.level
@@ -215,11 +218,13 @@ def eval_acc_state_changes(acc_prev, acc_curr):
 
     got_true = cmp_bool(acc_prev.warn, acc_curr.warn)
     if got_true is not None:
-        new_account_event(acc_curr, "Got warn flag :-/") if got_true else new_account_event(acc_curr, "Warn flag lifted :-)")
+        new_account_event(acc_curr, "Got warn flag :-/") if got_true else new_account_event(acc_curr,
+                                                                                            "Warn flag lifted :-)")
 
     got_true = cmp_bool(acc_prev.shadowbanned, acc_curr.shadowbanned)
     if got_true is not None:
-        new_account_event(acc_curr, "Got shadowban flag :-(") if got_true else new_account_event(acc_curr, "Shadowban flag lifted :-)")
+        new_account_event(acc_curr, "Got shadowban flag :-(") if got_true else new_account_event(acc_curr,
+                                                                                                 "Shadowban flag lifted :-)")
 
     got_true = cmp_bool(acc_prev.banned, acc_curr.banned)
     if got_true is not None:
@@ -227,16 +232,21 @@ def eval_acc_state_changes(acc_prev, acc_curr):
 
     got_true = cmp_bool(acc_prev.ban_flag, acc_curr.ban_flag)
     if got_true is not None:
-        new_account_event(acc_curr, "Got ban flag :-X") if got_true else new_account_event(acc_curr, "Ban flag lifted :-O")
+        new_account_event(acc_curr, "Got ban flag :-X") if got_true else new_account_event(acc_curr,
+                                                                                           "Ban flag lifted :-O")
 
     got_true = cmp_bool(acc_prev.captcha, acc_curr.captcha)
     if got_true is not None:
-        new_account_event(acc_curr, "Got CAPTCHA'd :-|") if got_true else new_account_event(acc_curr, "CAPTCHA solved :-)")
+        new_account_event(acc_curr, "Got CAPTCHA'd :-|") if got_true else new_account_event(acc_curr,
+                                                                                            "CAPTCHA solved :-)")
 
-    if acc_prev.rareless_scans == 0 and acc_curr.rareless_scans > 0:
-        new_account_event(acc_curr, "Started seeing only commons :-/")
-    if acc_prev.rareless_scans > 0 and acc_curr.rareless_scans == 0:
-        new_account_event(acc_curr, "Saw rares again :-)")
+    if acc_prev.system_id is not None and acc_curr.system_id is None:
+        new_account_event(acc_curr, "Got released from [{}]".format(acc_prev.system_id))
+
+        # if acc_prev.rareless_scans == 0 and acc_curr.rareless_scans > 0:
+        #     new_account_event(acc_curr, "Started seeing only commons :-/")
+        # if acc_prev.rareless_scans > 0 and acc_curr.rareless_scans == 0:
+        #     new_account_event(acc_curr, "Saw rares again :-)")
 
 
 def update_account(data, db):
@@ -273,11 +283,17 @@ def db_cleanup():
     while True:
         try:
             pastdate = datetime.now() - timedelta(minutes=release_timeout)
-            query = Account.update(system_id=None).where(
+            accounts = Account.select().where(
                 Account.system_id.is_null(False) & (Account.last_modified <= pastdate))
-            num_affected = query.execute()
-            if num_affected > 0:
-                log.info("Released {} accounts that haven't been updated in the last {} minutes.".format(num_affected,
+            num = 0
+            for acc in accounts:
+                num += 1
+                new_account_event(acc, "Got auto-released from [{}]".format(acc.system_id))
+                acc.system_id = None
+                acc.last_modified = datetime.now()
+                acc.save()
+            if num > 0:
+                log.info("Released {} accounts that haven't been updated in the last {} minutes.".format(num,
                                                                                                          release_timeout))
         except Exception as e:
             log.error(e)
@@ -295,5 +311,3 @@ def create_tables(db):
         else:
             log.debug('Skipping table %s, it already exists.', table.__name__)
     db.close()
-
-
