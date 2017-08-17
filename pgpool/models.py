@@ -2,18 +2,21 @@ import copy
 import logging
 import time
 from datetime import datetime, timedelta
+from threading import Lock
 
 from peewee import DateTimeField, CharField, SmallIntegerField, IntegerField, \
     DoubleField, BooleanField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
-from playhouse.shortcuts import RetryOperationalError
+from playhouse.shortcuts import RetryOperationalError, model_to_dict
 
 from pgpool.config import cfg_get
 
 log = logging.getLogger(__name__)
 
 flaskDb = FlaskDB()
+
+request_lock = Lock()
 
 
 class MyRetryDB(RetryOperationalError, PooledMySQLDatabase):
@@ -93,17 +96,40 @@ class Account(flaskDb.Model):
 
     @staticmethod
     def get_unused(system_id, count=1, min_level=1, lat=None, lng=None):
-        query = (Account.select()
-                        .where(Account.system_id.is_null())
-                        .for_update()
-                        .limit(count)
-                        .order_by(Account.last_modified)
-        )
+        # Only one client can request accounts at a time
+        request_lock.acquire()
+
+        not_banned = Account.banned.is_null(True) | Account.banned == False
+        not_shadowbanned = Account.shadowbanned.is_null(True) | Account.shadowbanned == False
+        query = Account.select().where(Account.system_id.is_null(True) & not_banned & not_shadowbanned)
+
+        # Additional conditions
         if min_level > 1:
-            query.where((Account.level >= min_level))
+            query = query.where(Account.level >= min_level)
+        # TODO: Add filter for nearby location
+
+        # Limitations and order
+        query = query.limit(count).order_by(Account.last_modified)
+
+        accounts = []
         for account in query:
             account.system_id = system_id
+            account.last_modified = datetime.now()
             account.save()
+            data = model_to_dict(account)
+            accounts.append({
+                'auth_service': data.get('auth_service'),
+                'username': data.get('username'),
+                'password': data.get('password'),
+                'latitude': data.get('latitude'),
+                'longitude': data.get('longitude'),
+                'rareless_scans': data.get('rareless_scans'),
+                'shadowbanned': data.get('shadowbanned'),
+                'last_modified': data.get('last_modified')
+            })
+
+        request_lock.release()
+        return accounts
 
 
 class Event(flaskDb.Model):
