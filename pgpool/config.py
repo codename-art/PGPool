@@ -12,13 +12,15 @@ cfg = {
     'db_name': '',
     'db_user': '',
     'db_pass': '',
-    'db_max_connections': 20
+    'db_max_connections': 20,
+    'account_release_timeout': 120      # Accounts are being released automatically after this many minutes from last update
 }
 
 
 def cfg_get(key, default=None):
     return cfg.get(key, default)
 
+# ===========================================================================
 
 parser = configargparse.ArgParser()
 parser.add_argument('-c', '--config',

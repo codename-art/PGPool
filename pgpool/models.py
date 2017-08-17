@@ -1,11 +1,10 @@
+import copy
 import logging
 import time
-from datetime import datetime
-from timeit import default_timer
+from datetime import datetime, timedelta
 
-import copy
 from peewee import DateTimeField, CharField, SmallIntegerField, IntegerField, \
-    DoubleField, BooleanField, InsertQuery, Model, BigIntegerField
+    DoubleField, BooleanField
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
@@ -241,6 +240,23 @@ def update_account(data, db):
             else:
                 log.warning('%s... Retrying...', repr(e))
                 time.sleep(1)
+
+
+def db_cleanup():
+    release_timeout = cfg_get('account_release_timeout')
+    while True:
+        try:
+            pastdate = datetime.now() - timedelta(minutes=release_timeout)
+            query = Account.update(system_id=None).where(
+                Account.system_id.is_null(False) & (Account.last_modified <= pastdate))
+            num_affected = query.execute()
+            if num_affected > 0:
+                log.info("Released {} accounts that haven't been updated in the last {} minutes.".format(num_affected,
+                                                                                                         release_timeout))
+        except Exception as e:
+            log.error(e)
+
+        time.sleep(60)
 
 
 def create_tables(db):

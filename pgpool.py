@@ -7,7 +7,7 @@ from flask import Flask, request
 from werkzeug.exceptions import abort
 
 from pgpool.config import cfg_get
-from pgpool.models import init_database, create_tables, db_updater, Account
+from pgpool.models import init_database, create_tables, db_updater, Account, db_cleanup
 
 # ---------------------------------------------------------------------------
 
@@ -95,6 +95,9 @@ t = Thread(target=db_updater, name='db-updater',
 t.daemon = True
 t.start()
 
+t = Thread(target=db_cleanup, name='db-cleanup')
+t.daemon = True
+t.start()
 
 log.info("PGPool starting up...")
 run_server()

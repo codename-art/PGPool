@@ -6,5 +6,6 @@
   "db_name": "pgpool",
   "db_user": "<DB USER>",
   "db_pass": "<DB PASS>",
-  "db_max_connections": 20
+  "db_max_connections": 20,
+  "account_release_timeout": 120
 }
