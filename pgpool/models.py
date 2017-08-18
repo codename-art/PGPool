@@ -286,7 +286,7 @@ def db_cleanup():
             accounts = Account.select().where(
                 Account.system_id.is_null(False) & (Account.last_modified <= pastdate))
             if len(accounts) > 0:
-                log.info("Releasing {} accounts that haven't been updated in the last {} minutes.".format(num,
+                log.info("Releasing {} accounts that haven't been updated in the last {} minutes.".format(len(accounts),
                                                                                                          release_timeout))
             for acc in accounts:
                 new_account_event(acc, "Auto-releasing from [{}]".format(acc.system_id))
