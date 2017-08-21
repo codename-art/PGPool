@@ -296,7 +296,7 @@ def update_account(data, db):
                 time.sleep(1)
 
 
-def db_cleanup():
+def auto_release():
     release_timeout = cfg_get('account_release_timeout')
     while True:
         try:
