@@ -28,7 +28,7 @@ class Account(flaskDb.Model):
     username = CharField(primary_key=True)
     password = CharField(null=True)
     email = CharField(null=True)
-    last_modified = DateTimeField(index=True, default=datetime.utcnow)
+    last_modified = DateTimeField(index=True, default=datetime.now)
     system_id = CharField(index=True, null=True)  # system which uses the account
     latitude = DoubleField(null=True)
     longitude = DoubleField(null=True)
