@@ -80,31 +80,6 @@ def accounts_update():
     return 'ok'
 
 
-# @app.route('/account/csvimport', methods=['POST'])
-# def import_csv_accounts():
-#     log.debug("new_accounts request received from {}.".format(request.remote_addr))
-#     num_accounts = 0
-#     for file_id in request.files:
-#         file = request.files[file_id]
-#         content = file.read()
-#         file.close()
-#         for line in content.splitlines():
-#             fields = line.split(",")
-#             fields = map(str.strip, fields)
-#             auth_service = fields[0]
-#             username = fields[1]
-#             password = fields[2]
-#             acc, created = Account.get_or_create(username=username,
-#                                                  defaults={
-#                                                      'auth_service': auth_service,
-#                                                      'password': password
-#                                                  })
-#             if created:
-#                 log.info("Imported new {} account {}".format(auth_service, username))
-#                 num_accounts += 1
-#     return "{} new accounts imported.".format(num_accounts)
-
-
 def run_server():
     app.run(threaded=True, port=cfg_get('port'))
 
