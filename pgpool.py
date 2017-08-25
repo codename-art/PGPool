@@ -41,15 +41,16 @@ def get_accounts():
     count = int(request.args.get('count', 1))
     min_level = int(request.args.get('min_level', 1))
     max_level = int(request.args.get('max_level', 40))
-    lat = request.args.get('latitude')
-    lat = float(lat) if lat else lat
-    lng = request.args.get('longitude')
-    lng = float(lng) if lng else lng
     include_already_assigned = parse_bool(request.args.get('include_already_assigned'))
+    banned_or_new = parse_bool(request.args.get('banned_or_new'))
+    # lat = request.args.get('latitude')
+    # lat = float(lat) if lat else lat
+    # lng = request.args.get('longitude')
+    # lng = float(lng) if lng else lng
     log.info(
         "System ID [{}] requested {} accounts level {}-{} from {}".format(system_id, count, min_level, max_level,
                                                                           request.remote_addr))
-    accounts = Account.get_accounts(system_id, count, min_level, max_level, lat, lng, include_already_assigned)
+    accounts = Account.get_accounts(system_id, count, min_level, max_level, include_already_assigned, banned_or_new)
     if len(accounts) < count:
         log.warning("Could only deliver {} accounts.".format(len(accounts)))
     return jsonify(accounts[0] if accounts and count == 1 else accounts)
