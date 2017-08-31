@@ -1,0 +1,29 @@
+# Server Settings
+#################
+
+#host: 127.0.0.1        # Host or IP to bind to.
+#port: 4242             # Port to bind to.
+
+
+# Accounts
+##########
+
+#accounts-file:         # Load accounts from CSV file containing "auth_service,username,passwd" lines.
+#level: 30              # Minimum trainer level required. Lower levels will yield an error.
+#shadowban-threshold: 3 # Mark an account as shadowbanned after this many errors.
+                        # If allPGPool is specified the account gets swapped out.
+
+
+# PGPool
+########
+
+#pgpool-url:            # Address of PGPool to load accounts from and/or update their details.
+#pgpool-system-id:      # System ID for PGPool. Required if --pgpool-url given.
+#pgpool-num-accounts:   # Use this many accounts from PGPool. --pgpool-url required.
+
+
+# General Settings
+##################
+
+hash-key:               # Hash key to use.
+#proxies_file:          # Load proxy list from text file (one proxy per line).
