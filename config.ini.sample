@@ -25,5 +25,5 @@
 # General Settings
 ##################
 
-hash-key:               # Hash key to use.
-#proxies_file:          # Load proxy list from text file (one proxy per line).
+hash-key:               # Hash key(s) to use.
+#proxies-file:          # Load proxy list from text file (one proxy per line).

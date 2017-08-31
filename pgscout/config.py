@@ -37,7 +37,7 @@ def parse_args():
                         help='Port to bind to.')
 
     parser.add_argument('-hk', '--hash-key', required=True, action='append',
-                        help='Hash key to use.')
+                        help='Hash key(s) to use.')
 
     parser.add_argument('-pf', '--proxies-file',
                         help='Load proxy list from text file (one proxy per line).')
