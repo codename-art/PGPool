@@ -1,20 +1,18 @@
 import logging
+import sys
 import time
 from Queue import Queue
 from threading import Thread
 
 from flask import Flask, request, jsonify
-from mrmime import init_mr_mime
-from mrmime.cyclicresourceprovider import CyclicResourceProvider
 
-from pgscout.Scout import Scout
+from pgscout.ScoutGuard import ScoutGuard
 from pgscout.ScoutJob import ScoutJob
 from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
-from pgscout.config import cfg_get
+from pgscout.config import cfg_get, cfg_init
 from pgscout.console import print_status
-from pgscout.proxy import init_proxies, get_proxies
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
-    normalize_spawn_point_id
+    normalize_spawn_point_id, load_pgpool_account
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -76,65 +74,46 @@ def cache_cleanup_thread():
         log.info("Cleaned up {} entries from encounter cache.".format(num_deleted))
 
 
-def init_resoures_from_file(name, filename_key):
-    resources = []
-    resource_file = cfg_get(filename_key)
-    if resource_file:
-        try:
-            with open(resource_file) as f:
-                for line in f:
-                    # Ignore blank lines and comment lines.
-                    if len(line.strip()) == 0 or line.startswith('#'):
-                        continue
-                    resource = line.strip()
-                    resources.append(resource)
-        except IOError:
-            log.exception('Could not load {} from {}.'.format(resource_file))
-            exit(1)
-    return resources
+def load_accounts(jobs):
+    accounts_file = cfg_get('accounts_file')
+
+    accounts = []
+    if accounts_file:
+        log.info("Loading accounts from file {}.".format(accounts_file))
+        with open(accounts_file, 'r') as f:
+            for num, line in enumerate(f, 1):
+                fields = line.split(",")
+                fields = map(str.strip, fields)
+                accounts.append(ScoutGuard(fields[0], fields[1], fields[2], jobs))
+    elif cfg_get('pgpool_url') and cfg_get('pgpool_system_id') and cfg_get('pgpool_num_accounts') > 0:
+
+        acc_json = load_pgpool_account(cfg_get('pgpool_num_accounts'))
+        if isinstance(acc_json, dict):
+            acc_json = [acc_json]
+
+        if len(acc_json) > 0:
+            log.info("Loaded {} accounts from PGPool.".format(len(acc_json)))
+            for acc in acc_json:
+                accounts.append(ScoutGuard(acc['auth_service'], acc['username'], acc['password'], jobs))
+
+    if len(accounts) == 0:
+        log.error("Could not load any accounts. Nothing to do. Exiting.")
+        sys.exit(1)
+
+    return accounts
 
 
 # ===========================================================================
 
 log.info("PGScout starting up.")
 
-init_mr_mime()
+cfg_init()
 
-init_proxies()
-
-hash_key_provider = CyclicResourceProvider()
-
-hash_key = cfg_get('hash_key')
-if hash_key and len(hash_key) > 0:
-    hash_key_provider.add_resource(hash_key)
-    log.info("Loaded single hash key from config.")
-
-hash_keys = cfg_get('hash_keys')
-if hash_keys and len(hash_keys) > 0:
-    for hk in hash_keys:
-        hash_key_provider.add_resource(hk)
-    log.info("Loaded {} hash keys from config.".format(len(hash_keys)))
-
-hash_keys = init_resoures_from_file('hash keys', 'hash_key_file')
-if hash_keys and len(hash_keys) > 0:
-    for hk in hash_keys:
-        hash_key_provider.add_resource(hk)
-    log.info("Loaded {} hash keys from file {}.".format(len(hash_keys), cfg_get('hash_key_file')))
-
-proxy_provider = CyclicResourceProvider()
-for proxy in get_proxies():
-    proxy_provider.add_resource(proxy)
-
-with open(cfg_get('accounts_file'), 'r') as f:
-    for num, line in enumerate(f, 1):
-        fields = line.split(",")
-        fields = map(str.strip, fields)
-        scout = Scout(fields[0], fields[1], fields[2], jobs,
-                      hash_key_provider, proxy_provider)
-        scouts.append(scout)
-        t = Thread(target=scout.run, name="{}".format(scout.username))
-        t.daemon = True
-        t.start()
+scouts = load_accounts(jobs)
+for scout in scouts:
+    t = Thread(target=scout.run)
+    t.daemon = True
+    t.start()
 
 # Cleanup cache in background
 t = Thread(target=cache_cleanup_thread, name="cache_cleaner")

@@ -1,12 +1,14 @@
 import json
+import logging
 import os
-import random
-
-import math
 from base64 import b64decode
 
-import geopy.distance
 import psutil
+import requests
+
+from pgscout.config import cfg_get
+
+log = logging.getLogger(__name__)
 
 
 def rss_mem_size():
@@ -71,3 +73,15 @@ def calc_pokemon_level(cp_multiplier):
 
 def calc_iv(at, df, st):
     return float(at + df + st) / 45 * 100
+
+
+def load_pgpool_account(count):
+    log.info("Trying to load {} accounts from PGPool.".format(count))
+    request = {
+        'system_id': cfg_get('pgpool_system_id'),
+        'count': count,
+        'min_level': cfg_get('level'),
+        'reuse': True
+    }
+    r = requests.get("{}/account/request".format(cfg_get('pgpool_url')), params=request)
+    return r.json()

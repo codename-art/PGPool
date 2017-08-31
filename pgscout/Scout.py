@@ -7,7 +7,6 @@ import geopy
 from mrmime.pogoaccount import POGOAccount
 from mrmime.utils import jitter_location
 from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
-from pgoapi.utilities import get_cell_ids, f2i
 
 from pgscout.config import cfg_get
 from pgscout.moveset_grades import get_moveset_grades
@@ -34,13 +33,12 @@ ENCOUNTER_RESULTS = {
 
 
 class Scout(POGOAccount):
-    def __init__(self, auth, username, password, job_queue, hash_key_provider, proxy_provider):
+    def __init__(self, auth, username, password, job_queue):
         super(Scout, self).__init__(auth, username, password,
-                                    hash_key_provider=hash_key_provider, proxy_provider=proxy_provider)
+                                    hash_key_provider=cfg_get('hash_key_provider'),
+                                    proxy_provider=cfg_get('proxy_provider'))
 
         self.job_queue = job_queue
-        self.shadowbanned = False
-        self.active = True
 
         # Stats
         self.previous_encounter = None
@@ -50,13 +48,12 @@ class Scout(POGOAccount):
         self.past_pauses = deque()
         self.encounters_per_hour = float(0)
 
+        # Number of errors that may be the cause of a shadowban
+        self.errors = 0
+
     def run(self):
         self.log_info("Waiting for job...")
         while True:
-            if self.shadowbanned:
-                self.log_warning("Account shadowbanned. Stopping.")
-                break
-
             job = self.job_queue.get()
             try:
                 self.log_info(u"Scouting a {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
@@ -80,14 +77,18 @@ class Scout(POGOAccount):
                         job.result = self.scout_by_encounter_id(job)
                     else:
                         job.result = self.scout_error("Could not determine encounter_id for {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
+
+                # Check shadowban status
+                if self.shadowbanned or self.errors >= cfg_get('shadowban_threshold'):
+                    self.shadowbanned = True
+                    self.log_warning("Account probably shadowbanned. Stopping.")
+                    break
+
             except :
                 job.result = self.scout_error(repr(sys.exc_info()))
             finally:
                 job.processed = True
                 self.update_history()
-
-        # We broke out of the main loop, so something is f*cked up with this scout.
-        self.active = False
 
     def update_history(self):
         if self.previous_encounter:
@@ -168,31 +169,36 @@ class Scout(POGOAccount):
 
     def parse_encounter_response(self, responses, job):
         if not responses:
-            return self.scout_error("Empty encounter response.")
+            return self.scout_error("Empty encounter response")
 
         if self.has_captcha():
-            return self.scout_error("Scout account captcha'd.")
+            return self.scout_error("Account captcha'd")
+
+        if self.is_banned():
+            return self.scout_error("Account banned")
 
         encounter = responses.get('ENCOUNTER')
         if not encounter:
             return self.scout_error("No encounter result returned.")
         if not encounter.HasField('wild_pokemon'):
+            self.errors += 1
             return self.scout_error("No wild pokemon info found.")
 
         enc_status = encounter.status
 
         # Check for shadowban - ENCOUNTER_BLOCKED_BY_ANTICHEAT
         if enc_status == 8:
+            self.errors += 1
             self.shadowbanned = True
 
         if enc_status != 1:
             return self.scout_error(ENCOUNTER_RESULTS[enc_status])
 
         scout_level = self.get_stats('level')
-        if scout_level < cfg_get('require_min_trainer_level'):
+        if scout_level < cfg_get('level'):
             return self.scout_error(
                 "Trainer level {} is too low. Needs to be {}+".format(
-                    scout_level, cfg_get("require_min_trainer_level")))
+                    scout_level, cfg_get("level")))
 
         pokemon_info = encounter.wild_pokemon.pokemon_data
         cp = pokemon_info.cp

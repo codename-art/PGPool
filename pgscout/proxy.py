@@ -8,8 +8,6 @@ from threading import Thread
 import requests
 from queue import Queue
 
-from pgscout.config import cfg_get
-
 log = logging.getLogger(__name__)
 
 # Last used proxy for round-robin.
@@ -24,22 +22,6 @@ check_result_timeout = 4
 check_result_exception = 5
 check_result_empty = 6
 check_result_max = 6  # Should be equal to maximal return code.
-
-proxies = []
-
-
-def init_proxies():
-    global proxies
-    proxies = check_proxies()
-
-
-def get_proxies():
-    return proxies
-
-
-def have_proxies():
-    return len(proxies) > 0
-
 
 # Simple function to do a call to Niantic's system for
 # testing proxy connectivity.
@@ -107,14 +89,13 @@ def check_proxy(proxy_queue, timeout, working_proxies, check_results):
 
 
 # Check all proxies and return a working list with proxies.
-def check_proxies():
+def check_proxies(proxies_file):
 
     source_proxies = []
 
     check_results = [0] * (check_result_max + 1)
 
     # Load proxies from the file if such a file is configured.
-    proxies_file = cfg_get('proxies_file')
     if not proxies_file:
         return source_proxies
 
@@ -176,13 +157,3 @@ def check_proxies():
                  other_fails,
                  total_proxies)
         return working_proxies
-
-
-# Provide new proxy
-def get_new_proxy():
-    if not have_proxies():
-        return None
-    # Simply get next proxy.
-    global last_proxy
-    last_proxy = (last_proxy + 1) % len(proxies)
-    return proxies[last_proxy]
