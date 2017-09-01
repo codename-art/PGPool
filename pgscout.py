@@ -12,7 +12,7 @@ from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get, cfg_init
 from pgscout.console import print_status
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
-    normalize_spawn_point_id, load_pgpool_account
+    normalize_spawn_point_id, load_pgpool_accounts
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -87,7 +87,7 @@ def load_accounts(jobs):
                 accounts.append(ScoutGuard(fields[0], fields[1], fields[2], jobs))
     elif cfg_get('pgpool_url') and cfg_get('pgpool_system_id') and cfg_get('pgpool_num_accounts') > 0:
 
-        acc_json = load_pgpool_account(cfg_get('pgpool_num_accounts'))
+        acc_json = load_pgpool_accounts(cfg_get('pgpool_num_accounts'), reuse=True)
         if isinstance(acc_json, dict):
             acc_json = [acc_json]
 

@@ -75,13 +75,14 @@ def calc_iv(at, df, st):
     return float(at + df + st) / 45 * 100
 
 
-def load_pgpool_account(count):
-    log.info("Trying to load {} accounts from PGPool.".format(count))
+def load_pgpool_accounts(count, reuse=False):
+    addl_text = " Reusing previous accounts." if reuse else ""
+    log.info("Trying to load {} accounts from PGPool.{}".format(count, addl_text))
     request = {
         'system_id': cfg_get('pgpool_system_id'),
         'count': count,
         'min_level': cfg_get('level'),
-        'reuse': True
+        'reuse': reuse
     }
     r = requests.get("{}/account/request".format(cfg_get('pgpool_url')), params=request)
     return r.json()

@@ -1,6 +1,6 @@
 from pgscout.Scout import Scout
 from pgscout.config import use_pgpool
-from pgscout.utils import load_pgpool_account
+from pgscout.utils import load_pgpool_accounts
 
 
 class ScoutGuard(object):
@@ -16,7 +16,7 @@ class ScoutGuard(object):
             'password': password
         }
         if not username and use_pgpool():
-            initial_account = load_pgpool_account(1)
+            initial_account = load_pgpool_accounts(1, reuse=True)
         self.acc = self.init_scout(initial_account)
 
     def init_scout(self, acc_data):
@@ -38,6 +38,5 @@ class ScoutGuard(object):
 
     def swap_account(self):
         # First get new account, then release to avoid getting same account back.
-        new_acc = self.init_scout(load_pgpool_account(1))
         self.acc.update_pgpool(release=True, reason=self.acc.last_msg)
-        self.acc = new_acc
+        self.acc = self.init_scout(load_pgpool_accounts(1))

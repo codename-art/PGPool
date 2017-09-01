@@ -84,7 +84,7 @@ class Scout(POGOAccount):
                     self.log_warning("Account probably shadowbanned. Stopping.")
                     break
 
-            except :
+            except:
                 job.result = self.scout_error(repr(sys.exc_info()))
             finally:
                 job.processed = True
