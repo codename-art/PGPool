@@ -12,7 +12,7 @@ from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get, cfg_init
 from pgscout.console import print_status
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
-    normalize_spawn_point_id, load_pgpool_accounts
+    normalize_spawn_point_id, load_pgpool_accounts, is_accepting_new_requests
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -33,6 +33,12 @@ jobs = Queue()
 
 @app.route("/iv", methods=['GET'])
 def get_iv():
+    if not is_accepting_new_requests():
+        return jsonify({
+            'success': False,
+            'error': 'Not accepting new requests.'
+        })
+
     pokemon_id = request.args["pokemon_id"]
     pokemon_name = get_pokemon_name(pokemon_id)
     lat = request.args["latitude"]

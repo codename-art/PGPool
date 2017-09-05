@@ -7,8 +7,18 @@ import psutil
 import requests
 
 from pgscout.config import cfg_get
+from pgscout.WebServer import WebServer
 
 log = logging.getLogger(__name__)
+
+web = WebServer()
+
+def toggle_new_requests():
+    web.toggle_new_requests()
+
+
+def is_accepting_new_requests():
+    return web.accept_new_requests
 
 
 def rss_mem_size():
