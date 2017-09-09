@@ -79,7 +79,7 @@ class Scout(POGOAccount):
                         job.result = self.scout_error("Could not determine encounter_id for {} at {}, {}".format(job.pokemon_name, job.lat, job.lng))
 
                 # Check shadowban status
-                if self.shadowbanned or self.errors >= cfg_get('shadowban_threshold'):
+                if self.shadowbanned or ((self.errors >= cfg_get('shadowban_threshold')) and (cfg_get('shadowban_threshold') !=0)) :
                     self.shadowbanned = True
                     self.log_warning("Account probably shadowbanned. Stopping.")
                     break
