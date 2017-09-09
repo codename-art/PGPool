@@ -10,7 +10,7 @@
 
 #accounts-file:         # Load accounts from CSV file containing "auth_service,username,passwd" lines.
 #level: 30              # Minimum trainer level required. Lower levels will yield an error.
-#shadowban-threshold: 3 # Mark an account as shadowbanned after this many errors.
+#shadowban-threshold: 3 # Mark an account as shadowbanned after this many errors. (use 0 to disable threshold)
                         # If allPGPool is specified the account gets swapped out.
 
 
