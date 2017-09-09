@@ -96,6 +96,7 @@ def print_scouts(lines, state, scouts):
                                     warn_str, active,
                                     scout.total_encounters,
                                     "{:5.1f}".format(scout.encounters_per_hour),
+                                    scout.errors,
                                     hr_tstamp(scout.previous_encounter),
                                     scout.last_msg)
         else:
@@ -104,6 +105,7 @@ def print_scouts(lines, state, scouts):
                                     warn_str, active,
                                     scout.total_encounters,
                                     "{:5.1f}".format(scout.encounters_per_hour),
+                                    scout.errors,
                                     hr_tstamp(scout.previous_encounter),
                                     scout.last_msg)
 
@@ -111,13 +113,13 @@ def print_scouts(lines, state, scouts):
                               map(lambda s: len(s.acc.username), scouts)))
     len_num = str(len(str(len(scouts))))
     if cfg_get('proxies'):
-        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:25} | {:4} | {:6} | {:10} | {:5} | {:14} | {}'
+        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:25} | {:4} | {:6} | {:10} | {:5} | {:6} |{:14} | {}'
         lines.append(
-            line_tmpl.format('#', 'Scout', 'Proxy', 'Warn', 'Active', 'Encounters', 'Enc/h',
+            line_tmpl.format('#', 'Scout', 'Proxy', 'Warn', 'Active', 'Encounters', 'Enc/h', 'Errors',
                              'Last Encounter', 'Message'))
     else:
-        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:4} | {:6} | {:10} | {:5} | {:14} | {}'
-        lines.append(line_tmpl.format('#', 'Scout', 'Warn', 'Active', 'Encounters', 'Enc/h',
+        line_tmpl = u'{:' + len_num + '} | {:' + len_username + '} | {:4} | {:6} | {:10} | {:5} | {:6} | {:14} | {}'
+        lines.append(line_tmpl.format('#', 'Scout', 'Warn', 'Active', 'Encounters', 'Enc/h', 'Errors',
                                       'Last Encounter', 'Message'))
     return print_lines(lines, scout_line, scouts, 4, state)
 
