@@ -77,7 +77,7 @@ def print_status(scouts, initial_display, jobs):
         # Footer
         lines.append('Page {}/{}. Page number to switch pages. <enter> to '
                      'toggle log view. "p" for Pokemon stats.'
-                     ' "t" to stop accepting new requests.'.format(
+                     ' "t" to toggle accepting new requests.'.format(
             state['page'], total_pages))
 
         # Print lines
