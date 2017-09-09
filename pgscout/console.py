@@ -13,7 +13,7 @@ from threading import Thread
 from pgscout.cache import get_cached_count
 from pgscout.config import cfg_get
 from pgscout.stats import get_pokemon_stats
-from pgscout.utils import get_pokemon_name, rss_mem_size
+from pgscout.utils import get_pokemon_name, rss_mem_size, app_state
 
 
 def input_processor(state):
@@ -31,6 +31,8 @@ def input_processor(state):
         elif command == 'p':
             state['display'] = 'pokemon'
             state['page'] = 1
+        elif command == 't':
+            app_state.toggle_new_requests()
         elif command == '':
             # Toggle between scouts and log view
             state['display'] = 'scouts' if state['display'] == 'logs' else 'logs'
@@ -64,8 +66,8 @@ def print_status(scouts, initial_display, jobs):
 
         lines = []
         lines.append(
-            "Job queue length: {} | Cached encounters: {} | Mem Usage: {}".format(
-                jobs.qsize(), get_cached_count(), rss_mem_size()))
+            "Accepting requests: {} | Job queue length: {} | Cached encounters: {} | Mem Usage: {}".format(
+                app_state.accept_new_requests, jobs.qsize(), get_cached_count(), rss_mem_size()))
 
         if state['display'] == 'scouts':
             total_pages = print_scouts(lines, state, scouts)
@@ -74,7 +76,8 @@ def print_status(scouts, initial_display, jobs):
 
         # Footer
         lines.append('Page {}/{}. Page number to switch pages. <enter> to '
-                     'toggle log view. "p" for Pokemon stats.'.format(
+                     'toggle log view. "p" for Pokemon stats.'
+                     ' "t" to toggle accepting new requests.'.format(
             state['page'], total_pages))
 
         # Print lines

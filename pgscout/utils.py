@@ -7,8 +7,11 @@ import psutil
 import requests
 
 from pgscout.config import cfg_get
+from pgscout.AppState import AppState
 
 log = logging.getLogger(__name__)
+
+app_state = AppState()
 
 
 def rss_mem_size():
