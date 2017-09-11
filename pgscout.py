@@ -12,7 +12,7 @@ from pgscout.cache import get_cached_encounter, cache_encounter, cleanup_cache
 from pgscout.config import cfg_get, cfg_init
 from pgscout.console import print_status
 from pgscout.utils import get_pokemon_name, normalize_encounter_id, \
-    normalize_spawn_point_id, load_pgpool_accounts, app_state
+    load_pgpool_accounts, app_state
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s [%(threadName)16s][%(module)14s][%(levelname)8s] %(message)s')
@@ -45,7 +45,8 @@ def get_iv():
     lng = request.args["longitude"]
 
     encounter_id = normalize_encounter_id(request.args.get("encounter_id"))
-    spawn_point_id = normalize_spawn_point_id(request.args.get("spawn_point_id"))
+    # Spawn point ID is assumed to be a hex string
+    spawn_point_id = request.args.get("spawn_point_id")
 
     # Check cache
     cache_key = encounter_id if encounter_id else "{}-{}-{}".format(pokemon_id, lat, lng)

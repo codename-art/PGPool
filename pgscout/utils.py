@@ -39,16 +39,6 @@ def normalize_encounter_id(eid):
         return long(b64decode(eid))
 
 
-def normalize_spawn_point_id(sid):
-    if not sid:
-        return sid
-    try:
-        sid_int = int(sid)
-        return "{:x}".format(sid_int)
-    except:
-        return sid
-
-
 def get_pokemon_name(pokemon_id):
     if not hasattr(get_pokemon_name, 'pokemon'):
         file_path = os.path.join('pokemon.json')

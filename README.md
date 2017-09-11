@@ -35,7 +35,7 @@ PGScout accepts **HTTP GET** requests at `http://<your host>:<port>/iv` and need
 
 * `pokemon_id`: The Pokédex number of the Pokémon
 * `encounter_id`: Encounter ID (Base64 encoded **or** as long integer) provided by map scanner
-* `spawn_point_id`: ID of spawn point provided by map scanner as string
+* `spawn_point_id`: ID of spawn point provided by map scanner as **hex string**
 * `latitude`
 * `longitude`
 
