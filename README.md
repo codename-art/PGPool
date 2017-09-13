@@ -19,14 +19,46 @@ PGScout cannot work on itself. You need the following things:
 An incoming web-request to PGScout will create a job that is being put in a queue. All configured accounts will attach to this queue, pull jobs, perform the corresponding encounters and attach the found information back to the job, marking the job as completed. The incoming web-request waits for the job to be completed and returns the result JSON encoded to the requesting client.
 
 # Configuration
-Just copy `config.json.sample` to `config.json` and fill in the information:
+Just copy `config.ini.sample` to `config.ini` and change what you want/need to change.
+Configuration parameters can also be given on the commandline:
 
-* `host`: On which IP address the webservice will listen (default: 127.0.0.1). Set this to `0.0.0.0` to open up PGScout to the public.
-* `port`: On which port the webservice will listen (default: 4242)
-* `hash_key`: Your Bossland PokeHash Key which is needed to perform any Pokémon GO related requests
-* `accounts_file`: A file containing PTC or Google accounts for Pokémon GO in [RocketMap](https://github.com/RocketMap/RocketMap) format: `auth-service,username,password`
-* `proxies_file`: A file containing proxies in `ip:port` format. Proxies will be picked round-robin. This file is optional. If you don't use proxies, just leave it empty.
-* `wait_after_login`: PGScout waits this many seconds after a successful login before it performs the encounter request. Defaults to 20.
+```
+-h, --help            show this help message and exit
+-c CONFIG, --config CONFIG
+                    Specify configuration file.
+-hs HOST, --host HOST
+                    Host or IP to bind to.
+-p PORT, --port PORT  Port to bind to.
+-hk HASH_KEY, --hash-key HASH_KEY
+                    Hash key(s) to use.
+-pf PROXIES_FILE, --proxies-file PROXIES_FILE
+                    Load proxy list from text file (one proxy per line).
+-l LEVEL, --level LEVEL
+                    Minimum trainer level required. Lower levels will
+                    yield an error.
+-sb SHADOWBAN_THRESHOLD, --shadowban-threshold SHADOWBAN_THRESHOLD
+                    Mark an account as shadowbanned after this many
+                    errors. If --pgpool_url is specified the account gets
+                    swapped out.
+-pgpu PGPOOL_URL, --pgpool-url PGPOOL_URL
+                    Address of PGPool to load accounts from and/or update
+                    their details.
+-pgpsid PGPOOL_SYSTEM_ID, --pgpool-system-id PGPOOL_SYSTEM_ID
+                    System ID for PGPool. Required if --pgpool-url given.
+-pgpn PGPOOL_NUM_ACCOUNTS, --pgpool-num-accounts PGPOOL_NUM_ACCOUNTS
+                    Use this many accounts from PGPool. --pgpool-url
+                    required.
+-a ACCOUNTS_FILE, --accounts-file ACCOUNTS_FILE
+                    Load accounts from CSV file containing
+                    "auth_service,username,passwd" lines.
+```
+
+Defaults are:
+
+* `host`: 127.0.0.1 - Set this to `0.0.0.0` to open up PGScout to the public.
+* `port`: 4242
+* `level`: 30
+* `shadowban-threshold`: 5
 
 Don't forget to run `pip install -r requirements.txt` at least once before actually starting PGScout with `python pgscout.py`.
 
