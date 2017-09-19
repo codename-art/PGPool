@@ -49,6 +49,9 @@ def parse_args():
                         help='Mark an account as shadowbanned after this many errors. ' +
                              'If --pgpool_url is specified the account gets swapped out.')
 
+    parser.add_argument('-iv', '--initial-view', default="logs",
+                        help=('Initial view. Can be one of "logs", "scouts" or "pokemon". Default is "logs".'))
+
     parser.add_argument('-pgpu', '--pgpool-url',
                         help='Address of PGPool to load accounts from and/or update their details.')
 

@@ -40,6 +40,9 @@ Configuration parameters can also be given on the commandline:
                     Mark an account as shadowbanned after this many
                     errors. If --pgpool_url is specified the account gets
                     swapped out.
+-iv INITIAL_VIEW, --initial-view INITIAL_VIEW
+                    Initial view. Can be one of "logs", "scouts" or
+                    "pokemon". Default is "logs".
 -pgpu PGPOOL_URL, --pgpool-url PGPOOL_URL
                     Address of PGPool to load accounts from and/or update
                     their details.

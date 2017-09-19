@@ -129,7 +129,7 @@ t.start()
 
 # Start thread to print current status and get user input.
 t = Thread(target=print_status,
-           name='status_printer', args=(scouts, 'logs', jobs))
+           name='status_printer', args=(scouts, cfg_get('initial_view'), jobs))
 t.daemon = True
 t.start()
 
