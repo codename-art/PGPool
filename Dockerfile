@@ -15,6 +15,11 @@ WORKDIR /usr/src/app
 ENTRYPOINT ["python"]
 CMD ["./pgpool.py"] 
 
+# Install required system packages
+RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache bash git openssh curl
+RUN apk add --no-cache linux-headers
+
 COPY requirements.txt /usr/src/app/
 
 RUN pip install --no-cache-dir -r requirements.txt
