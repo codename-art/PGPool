@@ -1,12 +1,12 @@
-# Basic docker image for Monocle
+# Basic docker image for PGPool
 # Usage:
-#   docker build -t Monocle
-#   docker run -d --name Monocle -P Monocle
+#   docker build -t PGPool
+#   docker run -d --name PGPool 
 
 FROM python:2.7-alpine
 
 # Default port the webserver runs on
-EXPOSE 5000
+EXPOSE 4242
 
 # Working directory for the application
 WORKDIR /usr/src/app
