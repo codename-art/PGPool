@@ -5,6 +5,7 @@ from collections import deque
 
 import geopy
 from mrmime.pogoaccount import POGOAccount
+from mrmime.shadowbans import COMMON_POKEMON
 from mrmime.utils import jitter_location
 from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
 
@@ -184,7 +185,9 @@ class Scout(POGOAccount):
         if not encounter:
             return self.scout_error("No encounter result returned.")
         if not encounter.HasField('wild_pokemon'):
-            self.errors += 1
+            # Only count as error if it was a rare Pokemon - errors on common Pokemon won't mean shadowban
+            if job.pokemon_id not in COMMON_POKEMON:
+                self.errors += 1
             return self.scout_error("No wild pokemon info found.")
 
         enc_status = encounter.status
@@ -196,6 +199,10 @@ class Scout(POGOAccount):
 
         if enc_status != 1:
             return self.scout_error(ENCOUNTER_RESULTS[enc_status])
+
+        # Reset error counter if rare Pokemon was found
+        if job.pokemon_id not in COMMON_POKEMON:
+            self.errors = 0
 
         scout_level = self.get_stats('level')
         if scout_level < cfg_get('level'):
