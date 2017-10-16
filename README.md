@@ -4,8 +4,8 @@ PGScout is a webservice that takes coordinates and encounter ID of a Pokémon in
 
 **Bonus feature #2**: PGScout also works if you don't have the `encounter_id` and `spawn_point_id` of the Pokémon which are usually necessary to perform the encounter request. **Location and Pokédex ID is enough** for PGScout to work. It will scan the area for the desired Pokémon and perform the encounter afterwards.
 
-# Support PGScout [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/slop)
-If you like PGScout, you use it for a live map or whatever and feel the urgent need to thank me, just drop me a few **level 30+ accounts** or buy me a **[PokeHash key](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)**. Seriously, that would be so awesome! :-D You can find me on various Pokémon related Discords as "sLoPPydrive".
+# Support the Author [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/slop)
+If you like PGScout and feel the urgent need to **thank** me, the best way to do it is via **[PayPal](https://www.paypal.me/slop)** or **BitCoin (_1PNdXhzvvz2ytCf8mbFdF9MQaABzpjSbJi_)**  Seriously, that would be so awesome! :-D If you can't or don't want to use PayPal or BitCoin some **level 30+** accounts or **[PokeHash keys](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)** are always welcome as well. You can find me on various Pokémon related Discords as "sLoPPydrive".
 
 # Disclaimer
 PGScout or its author takes no responsibility if your accounts get banned in any way. As with any other 3rd party software breaking the ToS there is absolutely no guarantee that your accounts stay safe. This software is purely for educational purpose.
