@@ -95,7 +95,7 @@ class Account(flaskDb.Model):
     #     }
 
     @staticmethod
-    def get_accounts(system_id, count=1, min_level=1, max_level=40, reuse=False, banned_or_new=False):
+    def get_accounts(system_id, count=1, min_level=1, max_level=40, reuse=False, banned_or_new=False, shadow=False):
         # Only one client can request accounts at a time
         request_lock.acquire()
 
@@ -104,7 +104,7 @@ class Account(flaskDb.Model):
             main_condition = Account.banned.is_null(True) | (Account.banned == True) | (Account.shadowbanned == True)
             reuse = False
         else:
-            main_condition = (Account.banned == False) & (Account.shadowbanned == False)
+            main_condition = (Account.banned == False) & (Account.shadowbanned == shadow)
 
         queries = []
         if reuse:
