@@ -144,6 +144,5 @@ t.start()
 
 # Dummy endless loop.
 while True:
-    time.sleep(1)
     signal.signal(signal.SIGINT, signal_handler)
     signal.pause()
