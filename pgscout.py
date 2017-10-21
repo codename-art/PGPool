@@ -142,7 +142,6 @@ t = Thread(target=run_webserver, name='webserver')
 t.daemon = True
 t.start()
 
-# Dummy endless loop.
-while True:
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.pause()
+# Catch signals
+signal.signal(signal.SIGINT, signal_handler)
+signal.pause()
