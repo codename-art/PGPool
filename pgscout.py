@@ -142,6 +142,10 @@ t = Thread(target=run_webserver, name='webserver')
 t.daemon = True
 t.start()
 
-# Catch signals
+# Catch signals if Linux, dummy loop on Windows
 signal.signal(signal.SIGINT, signal_handler)
-signal.pause()
+if sys.platform != 'win32':
+    signal.pause()
+else:
+    while True:
+        time.sleep(1)
