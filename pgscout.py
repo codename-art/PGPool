@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+import signal
 from Queue import Queue
 from threading import Thread
 
@@ -109,6 +110,9 @@ def load_accounts(jobs):
 
     return accounts
 
+def signal_handler(signal, frame):
+        print "Exiting"
+        sys.exit(0)
 
 # ===========================================================================
 
@@ -138,6 +142,6 @@ t = Thread(target=run_webserver, name='webserver')
 t.daemon = True
 t.start()
 
-# Dummy endless loop.
-while True:
-    time.sleep(1)
+# Catch signals
+signal.signal(signal.SIGINT, signal_handler)
+signal.pause()
