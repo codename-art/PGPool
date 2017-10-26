@@ -259,7 +259,8 @@ class Scout(POGOAccount):
         return responses
 
     def scout_error(self, error_msg):
-        self.log_error("Error: {}".format(error_msg))
+        if error_msg != self.last_msg:
+            self.log_error(error_msg)
         return {
             'success': False,
             'error': error_msg
