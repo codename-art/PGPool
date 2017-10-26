@@ -91,7 +91,8 @@ def cfg_init():
 
     # MrMime config
     mrmime_cfg = {
-        'pgpool_system_id': args.pgpool_system_id
+        'pgpool_system_id': args.pgpool_system_id,
+        'exception_on_captcha': True
     }
     if args.pgpool_url:
         mrmime_cfg['pgpool_url'] = args.pgpool_url
