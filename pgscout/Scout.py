@@ -92,7 +92,6 @@ class Scout(POGOAccount):
                 job.result = self.scout_error(repr(sys.exc_info()))
             finally:
                 job.processed = True
-                self.update_history()
 
     def update_history(self):
         if self.previous_encounter:
@@ -169,6 +168,7 @@ class Scout(POGOAccount):
     def scout_by_encounter_id(self, job):
         self.log_info("Performing encounter request at {}, {}".format(job.lat, job.lng))
         responses = self.req_encounter(job.encounter_id, job.spawn_point_id, float(job.lat), float(job.lng))
+        self.update_history()
         return self.parse_encounter_response(responses, job)
 
     def parse_encounter_response(self, responses, job):
