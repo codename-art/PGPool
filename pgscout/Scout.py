@@ -4,9 +4,10 @@ from base64 import b64encode
 from collections import deque
 
 import geopy
-from mrmime.pogoaccount import POGOAccount
+from mrmime.pogoaccount import POGOAccount, CaptchaException
 from mrmime.shadowbans import COMMON_POKEMON
 from mrmime.utils import jitter_location
+from pgoapi.exceptions import AuthException, BannedAccountException
 from pgoapi.protos.pogoprotos.networking.responses.encounter_response_pb2 import *
 
 from pgscout.config import cfg_get
@@ -63,12 +64,10 @@ class Scout(POGOAccount):
                 self.set_position(lat, lng, job.altitude)
                 if not self.check_login():
                     job.result = self.scout_error(self.last_msg)
-                    continue
-
-                # Check if banned.
-                if self.is_banned():
-                    job.result = self.scout_error("Account banned")
-                    break
+                    if self.is_banned() or self.has_captcha():
+                        break
+                    else:
+                        continue
 
                 if job.encounter_id and job.spawn_point_id:
                     job.result = self.scout_by_encounter_id(job)
@@ -88,10 +87,15 @@ class Scout(POGOAccount):
                     self.log_warning("Account probably shadowbanned. Stopping.")
                     break
 
-            except:
+            except (AuthException, BannedAccountException, CaptchaException) as e:
+                job.result = self.scout_error(self.last_msg)
+                break
+            except Exception:
                 job.result = self.scout_error(repr(sys.exc_info()))
             finally:
                 job.processed = True
+                if self.is_banned() or self.has_captcha():
+                    break
 
     def update_history(self):
         if self.previous_encounter:
@@ -174,12 +178,6 @@ class Scout(POGOAccount):
     def parse_encounter_response(self, responses, job):
         if not responses:
             return self.scout_error("Empty encounter response")
-
-        if self.has_captcha():
-            return self.scout_error("Account captcha'd")
-
-        if self.is_banned():
-            return self.scout_error("Account banned")
 
         encounter = responses.get('ENCOUNTER')
         if not encounter:
