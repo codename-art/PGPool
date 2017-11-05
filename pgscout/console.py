@@ -15,10 +15,11 @@ from pgscout.config import cfg_get
 from pgscout.stats import get_pokemon_stats
 from pgscout.utils import get_pokemon_name, rss_mem_size, app_state
 
+default_log_level = 0
 
 def input_processor(state):
     mainlog = logging.getLogger()
-    default_log_level = mainlog.getEffectiveLevel()
+    global default_log_level
 
     while True:
         # Wait for the user to press a key.
@@ -47,11 +48,17 @@ def input_processor(state):
 
 def print_status(scouts, initial_display, jobs):
     global status
+    global default_log_level
 
     state = {
         'page': 1,
         'display': initial_display
     }
+
+    default_log_level = logging.getLogger().getEffectiveLevel()
+    if initial_display != 'logs':
+        logging.getLogger().setLevel(logging.CRITICAL)
+    
     # Start another thread to get user input.
     t = Thread(target=input_processor,
                name='input_processor',
