@@ -43,6 +43,7 @@ class Scout(POGOAccount):
         self.job_queue = job_queue
 
         # Stats
+        self.start_time = time.time()
         self.previous_encounter = None
         self.total_encounters = 0
 
