@@ -172,7 +172,7 @@ def init_database(app):
     else:
         old_schema_version = Version.get(Version.key == 'schema_version').val
     if old_schema_version < db_schema_version:
-        migrate_database(db, 1)
+        migrate_database(db, old_schema_version)
 
     # Last, fix database encoding
     verify_table_encoding(db)
