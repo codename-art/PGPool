@@ -272,11 +272,6 @@ def db_updater(q, db):
                 # Helping out the GC.
                 del data
 
-                if q.qsize() > 50:
-                    log.warning(
-                        "DB queue is > 50 (@%d); try increasing --db-threads.",
-                        q.qsize())
-
         except Exception as e:
             log.exception('Exception in db_updater: %s', repr(e))
             time.sleep(5)
@@ -343,7 +338,8 @@ def update_account(data, db):
             acc.last_modified = datetime.now()
             eval_acc_state_changes(acc_previous, acc, metadata)
             acc.save()
-            log.info("Processed update for {}".format(acc.username))
+            if cfg_get('log_updates'):
+                log.info("Processed update for {}".format(acc.username))
         except Exception as e:
             # If there is a DB table constraint error, dump the data and
             # don't retry.
