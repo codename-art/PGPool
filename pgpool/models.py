@@ -381,7 +381,7 @@ def auto_release():
 def create_tables(db):
     db.connect()
 
-    tables = [Account, Event]
+    tables = [Account, Event, Version]
     for table in tables:
         if not table.table_exists():
             log.info('Creating table: %s', table.__name__)
