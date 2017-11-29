@@ -1,8 +1,5 @@
-flask
-git+https://github.com/michikrug/pgoapi.git@3550be4#egg=pgoapi
-git+https://github.com/sLoPPydrive/MrMime.git#egg=MrMime
-geopy
-beautifulsoup4
-requests
 psutil
+peewee==2.8.1
+flask
 configargparse
+PyMySQL

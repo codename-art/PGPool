@@ -1,137 +1,180 @@
-PGScout is a webservice that takes coordinates and encounter ID of a Pokémon in Pokémon GO and returns their stats like individual values, CP and level.
+# PGPool
+A simple webservice for account management.
 
-**Bonus feature #1**: PGScout also **pulls the moveset rating A to F from [GamePress](https://pokemongo.gamepress.gg)**. So you will instantly know whether your Pokémon has an optimal moveset for attack and/or defense. See [Vaporeon on GamePress](https://pokemongo.gamepress.gg/pokemon/134#movesets) for an example of moveset ratings.
+* Keeps a list of unused / in use accounts and which tools/instances they are being used in.
+* Stores all relevant account information like level, XP, team, coins, dust, last location, captcha / ban / shadowban status and many more.
+* Allows updates to these account information via REST API.
+* Logs certain events like when the account gets assigned to a system, when warning / ban flags occur the first time and when they disappear.
+* Instantly usable with every software that utilizes the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime)
 
-**Bonus feature #2**: PGScout also works if you don't have the `encounter_id` and `spawn_point_id` of the Pokémon which are usually necessary to perform the encounter request. **Location and Pokédex ID is enough** for PGScout to work. It will scan the area for the desired Pokémon and perform the encounter afterwards.
+**PGPool does NOT use any 3rd party API to actually log in to the accounts. It is purely a management software and therefore safe to use.**
+
+PGPool was designed to allow continuous execution of other tools that need to swap accounts every now and then. A typical scenario is a tool that requests a certain number of accounts to operate with, posting account detail updates to PGPool on a regular basis and if they fail release them to the pool and pick a new one. So instead of having a CSV file as account pool you're having a database with tons of more details and account history.
 
 # Support the Author [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/slop)
-If you like PGScout and feel the urgent need to **thank** me, the best way to do it is via **[PayPal](https://www.paypal.me/slop)** or **BitCoin (_1PNdXhzvvz2ytCf8mbFdF9MQaABzpjSbJi_)**  Seriously, that would be so awesome! :-D If you can't or don't want to use PayPal or BitCoin some **level 30+** accounts or **[PokeHash keys](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)** are always welcome as well. You can find me on various Pokémon related Discords as "sLoPPydrive".
+If you like PGPool (or my other tools) and feel the need to thank me, just drop me one or more **level 30 accounts** or buy me a **[PokeHash key](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)**. Seriously, that would be so awesome! :-D You can find me on various Pokémon related Discords as "sLoPPydrive".
 
 # Get Help
 Come join the official **[PGTools Discord Server](https://discord.gg/Vwe5mTa)** for [PGScout](https://github.com/sLoPPydrive/PGScout), [PGNumbra](https://github.com/sLoPPydrive/PGNumbra), [PGPool](https://github.com/sLoPPydrive/PGPool) and the PGTools [RocketMap](https://github.com/sLoPPydrive/RocketMap) and [PokeAlarm](https://github.com/sLoPPydrive/PokeAlarm) forks to get help or just hang around. You are very welcome. :)
 
-# Disclaimer
-PGScout or its author takes no responsibility if your accounts get banned in any way. As with any other 3rd party software breaking the ToS there is absolutely no guarantee that your accounts stay safe. This software is purely for educational purpose.
+# Quick Start
+_Again, be aware that PGPool currently only makes sense if you use any product using the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime) (e.g. PGScout, PGNumbra, my RocketMap branch MIX_SCYTHER)._
 
-# Requirements
-PGScout cannot work on itself. You need the following things:
-* One or more Pokémon GO accounts (level 30+ needed). See [Reddit discussion](https://www.reddit.com/r/pokemongodev/comments/66m89y/interesting_news_iv_and_moveset_differ_depending/) here. **As of 2017-04-28 everything below level 30 seems to be scrambled and totally random for everyone.** :-/
-* A [Bossland PokeHash Key](https://talk.pogodev.org/d/51-api-hashing-service-by-pokefarmer)
+The only thing you need is a MySQL database set up and the usual `pip install -r requirements.txt`.
 
-# How it works
-An incoming web-request to PGScout will create a job that is being put in a queue. All configured accounts will attach to this queue, pull jobs, perform the corresponding encounters and attach the found information back to the job, marking the job as completed. The incoming web-request waits for the job to be completed and returns the result JSON encoded to the requesting client.
+## Setting up PGPool
 
-# Configuration
-Just copy `config.ini.sample` to `config.ini` and change what you want/need to change.
-Configuration parameters can also be given on the commandline:
+1. Copy `config.json.sample` to `config.json`.
+2. Adjust settings for listening host:port and your database in `config.json`.
+3. Run PGPool with `python pgpool.py`.
 
+Some words about the non-obvious options in `config.json`:
+
+* `account_release_timeout` defines the time in **minutes** after which accounts that are still assigned (e.g. have not been released properly) to a system but have not been updated in this time will be released to the pool again. Default value is 120 minutes (2 hours). You can set it to 0 to fully disable auto-releasing.
+
+## Importing Accounts
+
+The preferred way to load new accounts into PGPool is to **put them in a CSV file** and let [PGNumbra](https://github.com/sLoPPydrive/PGNumbra) run with `--accounts-file` and `--pgpool-url`. This checks and adds them to PGPool in one run. If you chose a **location near a Pokestop** they will also be at least **level 2** after that.
+
+Alternatively: With PGPool comes a tool called `pgpool-import.py` which takes a CSV file and creates new account records in the database. These accounts don't have any account details yet (most important ban/shadowban status), so they won't get picked if a client requests any accounts. For them to become *active* you need to check them first, e.g. by running [PGNumbra Tools](https://github.com/sLoPPydrive/PGNumbra) on them. Commandline options of `pgpool-import.py` are:
 ```
--h, --help            show this help message and exit
--c CONFIG, --config CONFIG
-                    Specify configuration file.
--hs HOST, --host HOST
-                    Host or IP to bind to.
--p PORT, --port PORT  Port to bind to.
--hk HASH_KEY, --hash-key HASH_KEY
-                    Hash key(s) to use.
--pf PROXIES_FILE, --proxies-file PROXIES_FILE
-                    Load proxy list from text file (one proxy per line).
--l LEVEL, --level LEVEL
-                    Minimum trainer level required. Lower levels will
-                    yield an error.
--sb SHADOWBAN_THRESHOLD, --shadowban-threshold SHADOWBAN_THRESHOLD
-                    Mark an account as shadowbanned after this many
-                    errors. If --pgpool_url is specified the account gets
-                    swapped out.
--iv INITIAL_VIEW, --initial-view INITIAL_VIEW
-                    Initial view. Can be one of "logs", "scouts" or
-                    "pokemon". Default is "logs".
--pgpu PGPOOL_URL, --pgpool-url PGPOOL_URL
-                    Address of PGPool to load accounts from and/or update
-                    their details.
--pgpsid PGPOOL_SYSTEM_ID, --pgpool-system-id PGPOOL_SYSTEM_ID
-                    System ID for PGPool. Required if --pgpool-url given.
--pgpn PGPOOL_NUM_ACCOUNTS, --pgpool-num-accounts PGPOOL_NUM_ACCOUNTS
-                    Use this many accounts from PGPool. --pgpool-url
-                    required.
--a ACCOUNTS_FILE, --accounts-file ACCOUNTS_FILE
-                    Load accounts from CSV file containing
-                    "auth_service,username,passwd" lines.
+  -i IMPORT_CSV, --import-csv IMPORT_CSV
+             Filename of a CSV file to import accounts from.
+  -l LEVEL, --level LEVEL
+             Trainer level of imported accounts.
 ```
+The format of the CSV file should be one (and **only** one, don't mix them up!) of:
 
-Defaults are:
+* `auth,username,password` where `auth` is either `ptc` or `google`
+* `username,password` where `auth` will be assumed as `ptc`
 
-* `host`: 127.0.0.1 - Set this to `0.0.0.0` to open up PGScout to the public.
-* `port`: 4242
-* `level`: 30
-* `shadowban-threshold`: 5
 
-Don't forget to run `pip install -r requirements.txt` at least once before actually starting PGScout with `python pgscout.py`.
+# API
+Let's assume PGPool runs at the default URL `http://localhost:4242`. Then the following requests are possible:
 
-# Requests
-PGScout accepts **HTTP GET** requests at `http://<your host>:<port>/iv` and needs these parameters:
+## Requesting Accounts
 
-* `pokemon_id`: The Pokédex number of the Pokémon
-* `encounter_id`: Encounter ID (Base64 encoded **or** as long integer) provided by map scanner
-* `spawn_point_id`: ID of spawn point provided by map scanner as **hex string**
-* `latitude`
-* `longitude`
+**URL:** `http://localhost:4242/account/request`
+**Method: GET**
 
-An example **request** looks like this:
+Parameter | Required | Default | Description
+--------- | -------- | ------- | -----------
+`system_id` | yes | none | Tells PGPool which system is requesting the accounts. Cannot be empty.
+`count` | no | 1 | The number of accounts to request
+`min_level` | no | 1 | Minimum number of trainer level being requested. If you want reliable IV encounter data your accounts should be at least level 30
+`max_level` | no | 40 | Maximum number of trainer level. Maybe you want to reserve level 30 accounts for other tools.
+`reuse` | no | false | If set to yes the client will also receive good accounts that were previously assigned to the given `system_id`. Useful on client startup to reuse accounts.
+`banned_or_new` | no | false | If set to `true` only banned/shadowbanned and new accounts with unknown status will be returned.
+
+Returns a JSON object or a list of JSON objects representing accounts. These records do not contain every account detail because the client usually logs in to the accounts and get these details directly from the POGO servers:
 ```
-http://localhost:4242/iv?pokemon_id=70&encounter_id=MTY4MjU4OTY4Njg2MjExOTUwNA%3D%3D&spawn_point_id=47bf32c2c4d&latitude=51.124696678951&longitude=6.89885987319504
-```
-
-The **response** is JSON formatted and looks like this:
-```javascript
 {
-    "success": true,
-    "encounter_id": 16389112216478965452,
-    "encounter_id_b64": "MTYzODkxMTIyMTY0Nzg5NjU0NTI=",
-    "encountered_time": 1493990168.06719,
-    "iv_percent": 55.55555555555556,
-    "iv_attack": 3,
-    "iv_defense": 13,
-    "iv_stamina": 9,
-    "move_1": 230,
-    "move_2": 107,
-    "cp": 282,
-    "cp_multiplier": 0.29024988412857056,
-    "level": 5,
-    "catch_prob_1": 0.0861327052116394,
-    "catch_prob_2": 0.1263757348060608,
-    "catch_prob_3": 0.1648465394973755,
-    "gender": 1,
-    "height": 1.6896531581878662,
-    "weight": 108.0298080444336,
-    "rating_attack": "A",
-    "rating_defense": "B",
-    "scout_level": 30
+    "auth_service": "ptc",
+    "username": "myuser",
+    "password": "mypass",
+    "latitude": 51.93978239,
+    "longitude": 6.98748234,
+    "rareless_scans": 10,
+    "shadowbanned": true,
+    "last_modified": 1503574917
 }
 ```
 
-Most fields of the response should be self-explanatory.
-* `encountered_time`: The timestamp when the scout account made the encounter.
-* `rating_attack` and `rating_defense`: The moveset rating according to [GamePress](https://pokemongo.gamepress.gg) for attack and defense. If the moveset has no rating the field will contain a dash: "-"
-* `cp_multiplier` "CP Multiplier (CPM) is a number which Niantic uses to scale the attributes of a pokemon based on its level." PGScout uses this number to determine the Pokémon level. Read more at [GamePress](https://pokemongo.gamepress.gg/cp-multiplier).
-* `level`: The Pokémon level which is being represented by the arc in the Pokémon details in the game. Wild Pokémon will have a level that is limited by the trainer level but not larger than 30, so a trainer with level 17 may find Pokémon from level 1 to 17 but a level 34 trainer may only find Pokémon from level 1 to 30. So 30 is the absolute maximum for wild Pokémon. *(Note that Pokémon being hatched from eggs have an upper limit of level 20.)*
-* `catch_prob_1` to `catch_prob_3`: These are the catch probabilities for a regular Pokéball (1), a Great Ball (2) and an Ultra Ball (3). The higher the number the higher the chance to catch the Pokémon with the corresponding ball for a regular hit. Maximum is 1.0 which corresponds to 100% catch probability, so you **will** catch the Pokémon however you hit it.
-* `scout_level`: The trainer level of the scout account being used.
+## Updating Accounts
 
-## Unown Form
+**URL:** `http://localhost:4242/account/update`
+**Method: POST**
 
-If a scout encounters a **Unown** its **form** will be returned under key `form` in the response.
+Request data is either a single JSON object or a list of JSON objects that contain one or more attributes to set on the account.
 
-# Reliability
-PGScout detects your scout account trainer level and therefore knows which values are reliable and sets the others to `null`. Reliable means that the value is the same for all other trainers of the same or higher level.
+Attribute | Description
+--------- | -----------
+`auth_service` | Either `ptc` or `google`
+`username` | Self-explanatory
+`password` | Self-explanatory
+`email` | Email address being specified on account creation
+`last_modified` | Date and time of last update
+`system_id` | Identifier of system the account is assigned to
+`latitude` | Last location a request was performed
+`longitude` | Last location a request was performed
+`level` | Trainer-level
+`xp` | Experience points
+`encounters` | Number of Pokemon encounters (not catches!)
+`balls_thrown` | Number of balls thrown at Pokemon
+`captures` | Number of Pokemon captures
+`spins` | Number of Pokestop spins
+`walked` | Number of km walked
+`team` | One of `UNSET`, `TEAM_YELLOW`, `TEAM_BLUE` ir `TEAM_RED`
+`coins` | Amount of Pokecoins
+`stardust` | Amount of Stardust
+`warn` | `true` or `false` whether the account has a 3rd party app warning or not
+`banned` | `true` or `false`
+`ban_flag` | `true` or `false` 
+`tutorial_state` | currently unused
+`captcha` | `true` or `false` 
+`rareless_scans` | Number of consecutive location scans with no rare Pokemon sightings
+`shadowbanned` | `true` or `false` - client decision!
+`balls` | Number of Pokeballs (or other balls) in inventory
+`total_items` | Number of total items in inventory
+`pokemon` | Number of Pokemon in bag
+`eggs` | Number of eggs
+`incubators` | Number of incubators
 
-**Update from 2017-04-28**: Every stats (IV, height, weight, moves, CP, etc.) now seems to be totally unique for every player below level 30 even if their trainer level is the same. So using scout accounts below level 30 does not make sense at all.
+## Releasing Accounts
 
-# Errors
-If PGScout encounters an error, the response will look something like this:
-```javascript
+**URL:** `http://localhost:4242/account/release`
+**Method: POST**
+
+Same as updating accounts (they get updated when they are being released) but the `system_id` is also set to **NULL**.
+
+# Setting up 3rd Party Apps
+## General MrMime Support
+In your application that utilizes the [MrMime pgoapi wrapper library](https://github.com/sLoPPydrive/MrMime) and that should be linked to PGPool to update account details create or edit `mrmime_config.json` and set at least the following options:
+
+```
 {
-  "success": false,
-  "error": "Pokemon already despawned."
+    "pgpool_url": "http://localhost:4242",
+    "pgpool_system_id": "name_of_system"
+}
+
+```
+
+Note that this only enables the updating of account details. If your application needs to request and release accounts from and to the pool you will need a modified version of your application (read below for RocketMap integration). Maybe a fully automatic mode will be integrated into MrMime some day.
+
+Other options are possible, their default values are:
+```
+{
+    "pgpool_auto_update": true,         
+    "pgpool_update_interval": 60
 }
 ```
+
+* `pgpool_url`: The URL where PGPool is reachable. Must not end with "/".
+* `pgpool_system_id`: If the app requests or updates accounts they get marked as being in use by this `system_id`.
+* `pgpool_auto_update`: Whether MrMime updates PGPool account details automatically.
+* `pgpool_update_interval`: Update account details in PGPool after next API call if this many seconds have passed.
+
+
+## RocketMap
+
+PGPool is fully integrated into my own [RocketMap fork (branch MIX_SCYTHER)](https://github.com/sLoPPydrive/RocketMap/tree/MIX_SCYTHER). To use it, download my fork and set the following config parameters:
+```
+  --pgpool-url <url>
+  --workers <number of regular workers lvl 1-29>
+  --highlvl-workers <optional number of lvl 30+ accounts for encounters>
+```
+Now specifying accounts or CSV files will be ignored. Only the number of `--workers` has to be set (`--highlvl-workers` is optional). RocketMap also automatically sets the `system_id` for PGPool to the RocketMap `status_name`, so you don't have to worry about that either.
+
+## PGScout
+
+PGPool is fully integrated into [PGScout](https://github.com/sLoPPydrive/PGScout). To use it, set the following config parameters (on command line or `config.ini`):
+```
+  --pgpool-url <url>
+  --pgpool-system-id <system-id>
+  --pgpool-num-accounts <num>
+```
+Besides configuring the URL and system ID you need to set the number of accounts PGScout should request from PGPool. PGScout by default automatically requests accounts with minimum level 30. 
+
+## PGNumbra
+
+PGNumbra uses MrMime, so it works with PGPool out of the box. The difference is that PGNumbras `shadowcheck.py` tool sets an automatic `system_id` which is `pgnumbra_` followed by its process ID. Checked accounts are instantly released after being checked.
