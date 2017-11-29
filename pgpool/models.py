@@ -213,8 +213,9 @@ def db_updater(q, db):
 
 
 def new_account_event(acc, description):
-    evt = Event(type='account', entity_id=acc.username, description=description)
-    evt.save()
+    # Do not store event in DB
+    # evt = Event(type='account', entity_id=acc.username, description=description)
+    # evt.save()
     log.info("Event for account {}: {}".format(acc.username, description))
 
 
