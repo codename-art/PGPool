@@ -137,6 +137,29 @@ def read_csv(filename):
 
             num_accounts += 1
 
+
+def force_account_condition(acc):
+    acc.ban_flag = 0
+    if args.condition == 'good':
+        acc.banned = 0
+        acc.shadowbanned = 0
+        acc.captcha = 0
+    elif args.condition == 'banned':
+        acc.banned = 1
+        acc.shadowbanned = 0
+        acc.captcha = 0
+    elif args.condition == 'blind':
+        acc.banned = 0
+        acc.shadowbanned = 1
+        acc.captcha = 0
+    elif args.condition == 'captcha':
+        acc.banned = 0
+        acc.shadowbanned = 0
+        acc.captcha = 1
+
+
+# ---------------------------------------------------------------------------
+
 log.info("PGPool CSV Importer starting up...")
 
 db = init_database(app)
@@ -164,6 +187,8 @@ for i in range(0, num_accounts):
         acc.auth_service = auth_service
         acc.password = password
         acc.level = forced_level
+        if args.condition != 'unknown':
+            force_account_condition(acc)
         acc.save()
         addl_logmsg = " Set to level {}.".format(forced_level) if forced_level else ""
         log.info("Added new account {} to pool.{}".format(username, addl_logmsg))
